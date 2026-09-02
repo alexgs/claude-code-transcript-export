@@ -10,6 +10,14 @@
     "jsonl"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexgs/claude-code-transcript-export.git"
+  },
+  "homepage": "https://github.com/alexgs/claude-code-transcript-export#readme",
+  "bugs": {
+    "url": "https://github.com/alexgs/claude-code-transcript-export/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"
