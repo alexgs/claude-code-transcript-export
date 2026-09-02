@@ -436,7 +436,15 @@ session id, plus:
 
 - A computed statement about turn alternation. **Computed, not asserted** — the
   claim "odd turns are the author" is exactly the sort of plausible statement
-  that turns out to be false once, and checking costs ten lines.
+  that turns out to be false once, and checking costs ten lines. It is false
+  here: measured against the corpus, 13 alternation breaks across 9 of 74
+  sessions, plus one session that opens with an assistant turn.
+
+  Measured as **adjacent same-speaker pairs**, not as index parity. The obvious
+  implementation — compare each turn against `index % 2` — inflates wildly,
+  because one break early in a long session flips every turn after it. The
+  same 13 real breaks report as 172 that way. The number is not so much wrong
+  as meaningless, and a generated index is the last place to put one.
 - The §7.4 caveat about turn-number stability.
 - The exclusion count (§5.2).
 - `index.preamble` verbatim, if configured. This is where project-specific
