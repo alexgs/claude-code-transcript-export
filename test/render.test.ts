@@ -113,6 +113,19 @@ describe('parityStatement', () => {
     const statement = parityStatement([broken]);
     expect(statement).toContain('1 place');
     expect(statement).not.toContain('4 place');
+    expect(statement).toContain('there is 1 place');
+  });
+
+  it('agrees with the count inside the clause, not the clause count', () => {
+    const broken = session({
+      turns: [
+        { speaker: 'Human', text: 'a' },
+        { speaker: 'Human', text: 'b' },
+        { speaker: 'Human', text: 'c' },
+      ],
+    });
+    // One clause, but it reads "2 places" — so the verb is "are".
+    expect(parityStatement([broken])).toContain('there are 2 places');
   });
 
   it('reports a session opening with an assistant turn', () => {

@@ -44,9 +44,17 @@ export function parityStatement(sessions: Session[]): string {
     );
   }
 
+  // Agreement follows the count inside the clause, not the number of clauses:
+  // one clause reading "2 places" still takes "are".
+  const onlyCount =
+    totals.alternationBreaks > 0 && totals.sessionsNotStartingWithHuman > 0
+      ? 2
+      : totals.alternationBreaks + totals.sessionsNotStartingWithHuman;
+  const verb = parts.length === 1 && onlyCount === 1 ? 'is' : 'are';
+
   return (
-    `Turns mostly alternate — odd the author, even the assistant — but there ` +
-    `${parts.length === 1 ? 'is' : 'are'} ${parts.join(' and ')}. ` +
+    'Turns mostly alternate — odd the author, even the assistant — but there ' +
+    `${verb} ${parts.join(' and ')}. ` +
     'Read the heading rather than inferring the speaker from the number.'
   );
 }
