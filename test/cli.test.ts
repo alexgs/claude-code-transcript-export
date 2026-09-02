@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Writable } from 'node:stream';
-import { main } from '../src/cli/index.js';
+import { createRequire } from 'node:module';
+import { VERSION, main } from '../src/cli/index.js';
 import { parseArgs } from '../src/cli/args.js';
 import { formatProbe, probeRecords } from '../src/cli/probe.js';
 import { UsageError } from '../src/config.js';
@@ -229,8 +230,15 @@ describe('help and version', () => {
     expect(result.out).toContain('cctx list');
   });
 
-  it('prints a version', () => {
-    expect(run(['--version'], '/tmp').out.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+  it('prints the version package.json actually declares', () => {
+    // The previous assertion was a /^\d+\.\d+\.\d+$/ regex, which a stale
+    // hardcoded literal passed happily: --version reported 0.1.0 from the
+    // 0.1.2 package. Compare against the real thing or the check is theatre.
+    const pkg = createRequire(import.meta.url)('../package.json') as {
+      version: string;
+    };
+    expect(VERSION).toBe(pkg.version);
+    expect(run(['--version'], '/tmp').out.trim()).toBe(pkg.version);
   });
 });
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, realpathSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -16,6 +17,22 @@ import { defaultLogRoot } from '../paths.js';
 import { TEMPLATE } from './init.js';
 import { formatProbe, probeRecords } from './probe.js';
 import { parseArgs, type Options } from './args.js';
+
+/**
+ * The package's own version, read rather than duplicated.
+ *
+ * It was a string literal, and it drifted the moment the version was bumped:
+ * `cctx --version` reported 0.1.0 from the 0.1.2 package. A version command
+ * that lies is worse than none, because it sends you chasing the wrong build.
+ *
+ * `createRequire` rather than an `import` of the JSON: a static import would
+ * need an import attribute, and it would drag package.json inside `rootDir`,
+ * which it sits outside of. The relative path resolves the same either way —
+ * `src/cli/` and `dist/cli/` are both two levels below package.json.
+ */
+export const VERSION: string = (
+  createRequire(import.meta.url)('../../package.json') as { version: string }
+).version;
 
 const USAGE = `cctx — extract Claude Code session logs into markdown transcripts.
 
@@ -143,7 +160,7 @@ export function main(
     }
 
     if (options.command === 'version') {
-      io.stdout.write('0.1.0\n');
+      io.stdout.write(`${VERSION}\n`);
       return 0;
     }
 
