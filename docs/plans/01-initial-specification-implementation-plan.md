@@ -8,7 +8,7 @@ restate decisions, only sequences them.
 
 Build outward from the parts that touch nothing. The parsing and rendering core
 is pure by design (§9.1), so it can be fully tested before a single file is
-read or written. Discovery comes next because it decides *which* logs exist;
+read or written. Discovery comes next because it decides _which_ logs exist;
 the write layer comes last because it is the only place that can destroy
 anything.
 
@@ -77,7 +77,7 @@ it first costs nothing.
 ### 0.2 What CI cannot do
 
 The `probe` snapshot test (phase 7) compares the parser against **checked-in
-fixtures**, so it catches *our* regressions. It cannot catch Claude Code
+fixtures**, so it catches _our_ regressions. It cannot catch Claude Code
 changing its format, because CI has no real logs to look at — and upstream
 drift is the risk this project actually has (§14.1 of the spec: two decisions
 reversed by observation in one afternoon).
@@ -91,15 +91,15 @@ should say this rather than let a green badge imply otherwise.
 
 Port from the reference implementation, with the spec's changes:
 
-| Piece | Source | Change |
-| --- | --- | --- |
-| `stripHarnessTags` | port | none |
-| `slugify`, `fence` | port from `extract-conversations.ts` | vendor, drop the rest |
-| `isHumanTurn` | port | none (§7.2) |
-| `buildTurns` | port | none (§7.3) |
-| `toLocalDate` | port | none (§8.2) |
-| `renderBlock` | port | `image` case is new (§6.1); tool/thinking defaults flip |
-| title resolution | **new** | `custom-title > ai-title > agent-name` (§6) |
+| Piece              | Source                               | Change                                                  |
+| ------------------ | ------------------------------------ | ------------------------------------------------------- |
+| `stripHarnessTags` | port                                 | none                                                    |
+| `slugify`, `fence` | port from `extract-conversations.ts` | vendor, drop the rest                                   |
+| `isHumanTurn`      | port                                 | none (§7.2)                                             |
+| `buildTurns`       | port                                 | none (§7.3)                                             |
+| `toLocalDate`      | port                                 | none (§8.2)                                             |
+| `renderBlock`      | port                                 | `image` case is new (§6.1); tool/thinking defaults flip |
+| title resolution   | **new**                              | `custom-title > ai-title > agent-name` (§6)             |
 
 **Tests.** Unit, no filesystem. The load-bearing ones:
 

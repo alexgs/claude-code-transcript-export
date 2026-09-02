@@ -43,8 +43,8 @@ Out of scope, explicitly:
 
 The reference implementation was written against 7 sessions. This spec is
 written against 84 logs in 11 projects on the author's machine, probed
-2026-09-02. Numbers below are from that corpus and are *observations, not
-guarantees* — the JSONL schema is undocumented and drifts.
+2026-09-02. Numbers below are from that corpus and are _observations, not
+guarantees_ — the JSONL schema is undocumented and drifts.
 
 Record types, by count:
 
@@ -123,7 +123,7 @@ within its first 12 records, and it always agrees with the directory name.
 project path into a directory name by replacing `/` with `-`
 (`/Users/a/p` → `-Users-a-p`). The encoding is lossy and not injective — a path
 containing a hyphen is indistinguishable from one containing a separator — so
-it can be *generated* but never reliably *parsed*. Reading `cwd` is
+it can be _generated_ but never reliably _parsed_. Reading `cwd` is
 authoritative and costs a dozen parsed lines per file.
 
 Descendant matching, rather than equality, handles two real cases:
@@ -151,7 +151,7 @@ Task-tool subagent transcripts are written to:
 ~/.claude/projects/<project>/<parent-session-id>/subagents/agent-<id>.jsonl
 ```
 
-— a directory *named for the parent session*, sitting beside the parent's own
+— a directory _named for the parent session_, sitting beside the parent's own
 `<parent-session-id>.jsonl`. Two exist in the observed corpus; the mechanism
 is recent.
 
@@ -188,9 +188,9 @@ id and cross-linked to the parent, for anyone who wants the internals. These
 logs are as ephemeral as any other, so the option exists; it is off because the
 default should not duplicate content.
 
-*(Claude Code also writes a second copy of subagent traffic under
+_(Claude Code also writes a second copy of subagent traffic under
 `/private/tmp/claude-<uid>/…/tasks/*.output`. Out of scope: it is temp-scoped,
-and duplicates the `subagents/` log.)*
+and duplicates the `subagents/` log.)_
 
 ## 5. Configuration
 
@@ -206,16 +206,16 @@ exclude: []
 include: []
 
 # Content policy.
-tools: strip        # strip | summarize | keep
-thinking: drop      # drop | keep
-images: extract     # extract | marker
-imageDir: images    # relative to `out`
-subagents: ignore   # ignore | capture
-skipEmpty: true     # skip sessions with no surviving prose
+tools: strip # strip | summarize | keep
+thinking: drop # drop | keep
+images: extract # extract | marker
+imageDir: images # relative to `out`
+subagents: ignore # ignore | capture
+skipEmpty: true # skip sessions with no surviving prose
 
 # Sessions still being written (see §9.3). Capturing them is the default.
 skipActive: false
-activeGraceMinutes: 30   # only consulted when skipActive is true
+activeGraceMinutes: 30 # only consulted when skipActive is true
 
 # Opt-in: pair each session with commits authored while it was open.
 commits: false
@@ -223,7 +223,7 @@ commits: false
 # Index generation.
 index:
   enabled: true
-  preamble: null      # project-specific prose, inserted verbatim
+  preamble: null # project-specific prose, inserted verbatim
   listExcluded: count # count | ids | none
 ```
 
@@ -264,19 +264,19 @@ one command away.
 
 ## 6. Record handling
 
-| Type | Handling |
-| --- | --- |
-| `user` | Turn candidate; see §7.2. |
-| `assistant` | Turn content, coalesced; see §7.3. |
-| `custom-title` | **Title, highest precedence.** Last wins. |
-| `ai-title` | Title, if no `custom-title`. Last wins. |
-| `agent-name` | Title fallback, if neither of the above. |
-| `continued-in` | Records `continuedInSessionId` → frontmatter (§8.1). |
-| `relocated` | Contributes `relocatedCwd` to project matching (§4.2). |
-| `system` | Metadata only. `compactMetadata` marks a compaction boundary. |
-| `attachment` | Identity metadata only; content not rendered. |
-| `queue-operation` | Not rendered by default; see below. |
-| everything else | Ignored. Counted by `probe`, never rendered. |
+| Type              | Handling                                                      |
+| ----------------- | ------------------------------------------------------------- |
+| `user`            | Turn candidate; see §7.2.                                     |
+| `assistant`       | Turn content, coalesced; see §7.3.                            |
+| `custom-title`    | **Title, highest precedence.** Last wins.                     |
+| `ai-title`        | Title, if no `custom-title`. Last wins.                       |
+| `agent-name`      | Title fallback, if neither of the above.                      |
+| `continued-in`    | Records `continuedInSessionId` → frontmatter (§8.1).          |
+| `relocated`       | Contributes `relocatedCwd` to project matching (§4.2).        |
+| `system`          | Metadata only. `compactMetadata` marks a compaction boundary. |
+| `attachment`      | Identity metadata only; content not rendered.                 |
+| `queue-operation` | Not rendered by default; see below.                           |
+| everything else   | Ignored. Counted by `probe`, never rendered.                  |
 
 Two of these deserve their reasoning recorded.
 
@@ -292,19 +292,19 @@ message the author typed while the assistant was working
 (`"Maybe the shared founding should go in the timeline doc…"`). It is not
 rendered by default because a queued message that was later delivered also
 appears as a normal `user` record, and rendering both would duplicate it. But a
-queued message that was *cancelled* exists nowhere else in the log. Default off,
+queued message that was _cancelled_ exists nowhere else in the log. Default off,
 config-switchable, and flagged in §14.3 as needing a dedupe rule before it can
 sensibly be turned on.
 
 ### 6.1 Content blocks
 
-| Block | Handling |
-| --- | --- |
-| `text` | Verbatim. |
-| `thinking` | Dropped unless `thinking: keep`. |
-| `tool_use` / `tool_result` | Dropped unless `tools: keep`. |
-| `image` | Written to a file; see below. |
-| unknown | An explicit `> [unhandled block type: x]` marker, never a silent drop. |
+| Block                      | Handling                                                               |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `text`                     | Verbatim.                                                              |
+| `thinking`                 | Dropped unless `thinking: keep`.                                       |
+| `tool_use` / `tool_result` | Dropped unless `tools: keep`.                                          |
+| `image`                    | Written to a file; see below.                                          |
+| unknown                    | An explicit `> [unhandled block type: x]` marker, never a silent drop. |
 
 `thinking` is dropped by default because exploratory reasoning actively
 misleads a later reader: a hypothesis the assistant talked itself out of reads
@@ -355,7 +355,7 @@ A `user` record is a human turn when all hold:
 1. `type === "user"`
 2. not `isMeta`
 3. not `isSidechain` (currently always true; see §3.1)
-4. its content blocks are not *all* `tool_result`
+4. its content blocks are not _all_ `tool_result`
 5. its text is non-empty after harness tags are stripped
 
 Harness tags stripped, with their contents: `local-command-caveat`,
@@ -407,14 +407,14 @@ created: 2026-08-29
 updated: 2026-08-30
 turns: 44
 extracted: 2026-09-02
-kind: bg                  # omitted when absent
-continued_in: 01011c01-…  # omitted when absent
-continues: b9c837c1-…     # reverse link, computed across the run
-commits_in_window:        # only when `commits: true`
+kind: bg # omitted when absent
+continued_in: 01011c01-… # omitted when absent
+continues: b9c837c1-… # reverse link, computed across the run
+commits_in_window: # only when `commits: true`
   - 65bb587 Initial commit
 ```
 
-`commits_in_window` means *"committed while this session was open"*, which is
+`commits_in_window` means _"committed while this session was open"_, which is
 not the same claim as "committed by this session" — a hand-made commit lands
 here too, and two concurrent sessions both list the overlap. The window is used
 rather than the `Claude-Session` commit trailer because that id appears nowhere
@@ -470,7 +470,7 @@ The write path:
 
 Reading the prior date back is a small per-format operation — "this format
 knows how to read its own header" — not a regex over arbitrary prose. That
-distinction matters: a transcript *body* can easily contain `extracted:` at the
+distinction matters: a transcript _body_ can easily contain `extracted:` at the
 start of a line, and the reference implementation has to defend against exactly
 that.
 
@@ -485,12 +485,12 @@ transcript beats no transcript: it self-heals on the next run, and §1's whole
 argument is that the log is the copy that forgets. Skipping leaves the
 ephemeral copy as the only copy for longer, which is backwards.
 
-This is also what the primary workflow needs. Quitting Claude Code and *then*
+This is also what the primary workflow needs. Quitting Claude Code and _then_
 running `cctx` from a plain shell means every session on disk is already
 finished — so there is nothing to protect against, and a conservative default
 would only impose a wait before the session you just did could be captured.
 
-Three things were considered and rejected as the *mechanism*:
+Three things were considered and rejected as the _mechanism_:
 
 - **A terminal record.** There is none. Across the observed corpus the last
   three record types take a dozen different shapes with nothing marking the
@@ -531,7 +531,7 @@ terminal is as mid-flight as a running background job.
 
 Four rules, in order of how much they can cost you:
 
-1. **Renames.** A file is deleted when this run wrote a *different* filename
+1. **Renames.** A file is deleted when this run wrote a _different_ filename
    for the same session id. Titles change, so a session extracted across a
    rename lands under two names; leaving the first produces a truncated
    transcript that reads exactly like evidence, absent from the index, citable
@@ -617,13 +617,13 @@ uncaptured. That is a known, accepted gap rather than an oversight.
 
 ### 14.1 Settled during drafting
 
-| Question | Resolution |
-| --- | --- |
-| Package and bin name | `cctx` |
-| `image` blocks | Extracted to hash-named files (§6.1) |
-| `sessionKind: "bg"` | Not a policy axis (§9.4) |
-| Active-session handling | Capture everything; grace period opt-in (§9.3) |
-| Orphaned images | Reported, never deleted (§10.3) |
+| Question                     | Resolution                                          |
+| ---------------------------- | --------------------------------------------------- |
+| Package and bin name         | `cctx`                                              |
+| `image` blocks               | Extracted to hash-named files (§6.1)                |
+| `sessionKind: "bg"`          | Not a policy axis (§9.4)                            |
+| Active-session handling      | Capture everything; grace period opt-in (§9.3)      |
+| Orphaned images              | Reported, never deleted (§10.3)                     |
 | Where subagent traffic lives | Nested `subagents/` dir, `isSidechain: true` (§4.4) |
 
 The last of these was settled by running an experiment rather than reasoning
