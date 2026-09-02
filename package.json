@@ -23,7 +23,7 @@
     "node": ">=22"
   },
   "bin": {
-    "cctx": "./dist/cli/index.js"
+    "cctx": "dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
