@@ -1,0 +1,108 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`schema snapshot > derives the session metadata it should 1`] = `
+{
+  "continuedIn": "fixture1-1111-2222-3333-444444444444",
+  "created": "2026-08-24",
+  "cwds": [
+    "/work/fixture-project",
+    "/work/fixture-project/.claude/worktrees/spike",
+  ],
+  "id": "fixture0-1111-2222-3333-444444444444",
+  "images": [
+    "fixture0-4c4b6a3b.png",
+  ],
+  "kind": "bg",
+  "speakers": [
+    "Human",
+    "Assistant",
+    "Human",
+    "Assistant",
+  ],
+  "title": "The name I gave it",
+  "turnCount": 4,
+  "updated": "2026-08-24",
+}
+`;
+
+exports[`schema snapshot > names record and block types this version does not handle 1`] = `
+[
+  "future_record_type",
+  "mode",
+  "permission-mode",
+  "queue-operation",
+]
+`;
+
+exports[`schema snapshot > names record and block types this version does not handle 2`] = `
+[
+  "future_block_type",
+]
+`;
+
+exports[`schema snapshot > renders a stable transcript 1`] = `
+"---
+title: The name I gave it
+session_id: fixture0-1111-2222-3333-444444444444
+source: claude-code
+created: 2026-08-24
+updated: 2026-08-24
+turns: 4
+extracted: 2026-09-02
+kind: bg
+continued_in: fixture1-1111-2222-3333-444444444444
+---
+
+# The name I gave it
+
+## [1] Human
+
+First question, plainly asked.
+
+## [2] Assistant
+
+First half of a reply.
+
+Second half, coalesced into one turn.
+
+## [3] Human
+
+A question with a screenshot.
+
+![pasted image](images/fixture0-4c4b6a3b.png)
+
+## [4] Assistant
+
+Reply to the screenshot.
+
+> [unhandled block type: future_block_type]
+"
+`;
+
+exports[`schema snapshot > sees the record and block types it expects 1`] = `
+{
+  "blockTypes": {
+    "future_block_type": 1,
+    "image": 1,
+    "text": 4,
+    "thinking": 1,
+    "tool_result": 1,
+    "tool_use": 1,
+  },
+  "humanTurns": 2,
+  "recordTypes": {
+    "agent-name": 1,
+    "ai-title": 1,
+    "assistant": 4,
+    "continued-in": 1,
+    "custom-title": 1,
+    "future_record_type": 1,
+    "mode": 1,
+    "permission-mode": 1,
+    "queue-operation": 1,
+    "relocated": 1,
+    "user": 5,
+  },
+  "userRecords": 5,
+}
+`;

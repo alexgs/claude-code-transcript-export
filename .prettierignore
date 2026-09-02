@@ -1,0 +1,8 @@
+dist/
+node_modules/
+coverage/
+
+# Prose is authored, not formatted. Prettier rewrites emphasis markers
+# and reflows paragraphs, which is noise in a document meant to be read.
+docs/
+*.md

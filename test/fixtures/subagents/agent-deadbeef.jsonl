@@ -1,0 +1,2 @@
+{"type": "user", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "isSidechain": true, "timestamp": "2026-08-24T21:13:15Z", "message": {"role": "user", "content": "subagent prompt"}}
+{"type": "assistant", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "isSidechain": true, "timestamp": "2026-08-24T21:13:18Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "subagent reply"}]}}
