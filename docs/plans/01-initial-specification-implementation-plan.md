@@ -40,7 +40,7 @@ test/
   fixtures/         checked-in synthetic JSONL
 ```
 
-## Phase 0 — scaffolding
+## Phase 0 — scaffolding and CI
 
 - `package.json`: name and bin `cctx`, `type: module`, `engines.node >= 22`,
   single runtime dep `yaml`, dev deps `typescript` / `vitest` / `prettier`.
@@ -49,8 +49,43 @@ test/
   `noUncheckedIndexedAccess`.
 - `exports` map with both the library entry and `./package.json`.
 
-**Done when:** `npm run build` emits `dist/` with `.d.ts`, and `npx .` prints
-usage.
+`.github/workflows/ci.yml`, on push and pull request:
+
+- Matrix over Node 22 (the floor declared in `engines`) and current LTS.
+- `npm ci` → `format:check` → `typecheck` → `test` → `build`.
+- `permissions: contents: read` at the top level; the job needs nothing more.
+
+**Done when:** `npm run build` emits `dist/` with `.d.ts`, `npx .` prints
+usage, and CI is green on a pull request.
+
+### 0.1 CI forces the log root to be injectable
+
+CI has no `~/.claude/projects`, and it must never grow one. Every test reads
+from checked-in fixtures, which is not merely a testing convention — it is an
+**API requirement**, and it needs to land in phase 0 rather than be retrofitted:
+
+- `discover()` takes the logs root as a parameter, defaulting to
+  `join(homedir(), '.claude', 'projects')`. It does not call `homedir()`
+  internally.
+- Nothing below the CLI layer reads `homedir()`, `process.env`, or the clock.
+  `extractedOn` is already a parameter (§9.1); the logs root and
+  `CLAUDE_CODE_SESSION_ID` (§9.3) join it.
+
+Retrofitting this is painful because it reaches every call site at once. Doing
+it first costs nothing.
+
+### 0.2 What CI cannot do
+
+The `probe` snapshot test (phase 7) compares the parser against **checked-in
+fixtures**, so it catches *our* regressions. It cannot catch Claude Code
+changing its format, because CI has no real logs to look at — and upstream
+drift is the risk this project actually has (§14.1 of the spec: two decisions
+reversed by observation in one afternoon).
+
+So drift detection stays a local, manual act: run `cctx probe` against real
+logs when something looks wrong, and update fixtures when it has moved. CI
+guards the code; only a human with real logs guards the assumptions. The README
+should say this rather than let a green badge imply otherwise.
 
 ## Phase 1 — pure core
 
@@ -172,6 +207,11 @@ renderer does not handle.
 - A `probe` snapshot test over checked-in fixtures, so **schema drift fails a
   test** rather than silently degrading output (§3.1). This is the phase's most
   valuable artifact.
+- `.github/workflows/release.yml`, on a version tag: `npm ci` → full CI suite →
+  `npm publish --provenance --access public`. Needs `id-token: write` and
+  trusted publishing configured on the npm side.
+- `npm pack --dry-run` runs in CI on every push, so a packaging mistake fails
+  before a tag, not after.
 - Publish `0.1.0`.
 
 ## Phase 8 — migrate Protocol Era
