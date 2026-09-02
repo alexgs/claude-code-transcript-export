@@ -1,0 +1,18 @@
+{"type": "mode", "mode": "normal", "sessionId": "fixture0-1111-2222-3333-444444444444"}
+{"type": "permission-mode", "sessionId": "fixture0-1111-2222-3333-444444444444"}
+{"type": "ai-title", "aiTitle": "Model's name for it", "sessionId": "fixture0-1111-2222-3333-444444444444"}
+{"type": "custom-title", "customTitle": "The name I gave it", "sessionId": "fixture0-1111-2222-3333-444444444444"}
+{"type": "agent-name", "agentName": "background job", "sessionId": "fixture0-1111-2222-3333-444444444444"}
+{"type": "user", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "sessionKind": "bg", "timestamp": "2026-08-24T21:13:00Z", "message": {"role": "user", "content": "First question, plainly asked."}}
+{"type": "assistant", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:13:10Z", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "internal reasoning, dropped by default"}, {"type": "text", "text": "First half of a reply."}]}}
+{"type": "assistant", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:13:20Z", "message": {"role": "assistant", "content": [{"type": "tool_use", "name": "Bash", "input": {"command": "ls"}}]}}
+{"type": "user", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:13:25Z", "message": {"role": "user", "content": [{"type": "tool_result", "content": "a\nb"}]}}
+{"type": "assistant", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:13:30Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "Second half, coalesced into one turn."}]}}
+{"type": "user", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:14:00Z", "message": {"role": "user", "content": [{"type": "text", "text": "A question with a screenshot."}, {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "iVBORw0KGgo="}}]}}
+{"type": "assistant", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:14:10Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "Reply to the screenshot."}, {"type": "future_block_type", "payload": "unknown to this version"}]}}
+{"type": "user", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "isMeta": true, "timestamp": "2026-08-24T21:14:20Z", "message": {"role": "user", "content": "injected context, not a turn"}}
+{"type": "user", "sessionId": "fixture0-1111-2222-3333-444444444444", "cwd": "/work/fixture-project", "timestamp": "2026-08-24T21:14:30Z", "message": {"role": "user", "content": "<command-name>/clear</command-name><command-args></command-args>"}}
+{"type": "queue-operation", "operation": "enqueue", "sessionId": "fixture0-1111-2222-3333-444444444444", "timestamp": "2026-08-24T21:14:35Z", "content": "a queued message"}
+{"type": "future_record_type", "sessionId": "fixture0-1111-2222-3333-444444444444", "note": "unknown to this version"}
+{"type": "relocated", "sessionId": "fixture0-1111-2222-3333-444444444444", "relocatedCwd": "/work/fixture-project/.claude/worktrees/spike"}
+{"type": "continued-in", "sessionId": "fixture0-1111-2222-3333-444444444444", "timestamp": "2026-08-24T21:15:00Z", "continuedInSessionId": "fixture1-1111-2222-3333-444444444444"}

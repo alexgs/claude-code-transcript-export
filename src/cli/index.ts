@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -256,13 +256,22 @@ export function main(
 /**
  * Run only when this file is the entry point.
  *
- * `process.argv[1] !== undefined` is not that check — it is true whenever the
- * module is imported at all, so a test importing `main` would execute the CLI
- * as a side effect of the import.
+ * Two things this has to get right, both of which were wrong first:
+ *
+ * - Testing that `process.argv[1]` is merely defined is not a main-module
+ *   check. It is true on any import, so importing `main` in a test executed
+ *   the whole CLI as a side effect.
+ *
+ * - `process.argv[1]` is the path node was invoked with, which for an
+ *   installed package is the `node_modules/.bin/cctx` **symlink**, while
+ *   `import.meta.url` is the real file it points at. Comparing them without
+ *   resolving the link means the installed binary silently does nothing.
  */
 /* c8 ignore start */
 const entry = process.argv[1];
-if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
+const entryUrl =
+  entry === undefined ? undefined : pathToFileURL(realpathSync(entry)).href;
+if (entryUrl !== undefined && import.meta.url === entryUrl) {
   const code = main(process.argv.slice(2), {
     stdout: process.stdout,
     stderr: process.stderr,
