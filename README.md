@@ -13,10 +13,10 @@ precious.
 ## Install
 
 ```sh
-npm install -g cctx
+npm install -g @alexgsdev/claude-code-transcript-export
 ```
 
-Requires Node 22 or newer.
+Installs the `cctx` command. Requires Node 22 or newer.
 
 ## Use
 
@@ -122,7 +122,7 @@ does not handle. Run it when output looks wrong.
 ## Library
 
 ```ts
-import { discover, readSession, renderTranscript } from 'cctx';
+import { discover, readSession, renderTranscript } from '@alexgsdev/claude-code-transcript-export';
 ```
 
 Everything is pure unless its name says otherwise — nothing below the CLI layer
