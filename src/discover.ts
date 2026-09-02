@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { UsageError } from './config.js';
-import { isWithin } from './paths.js';
+import { encodeProjectDir, isWithin } from './paths.js';
 import type { RawRecord } from './types.js';
 
 /** How many records to read before giving up on finding identity fields. */
@@ -102,13 +102,40 @@ export function readIdentity(path: string, records: RawRecord[]): LogIdentity {
 /**
  * True when a log belongs to the project rooted at `root`.
  *
- * Membership is decided by `cwd`, never by decoding the project directory name:
- * that encoding is lossy and cannot be reversed. Descendant matching rather
- * than equality covers Claude Code launched from a subdirectory, and worktrees
- * that `relocated` records point at beneath `.claude/worktrees/`.
+ * Two signals, either of which is sufficient.
+ *
+ * **The containing directory.** Claude Code groups a project's logs in
+ * `<logRoot>/<encoded path>`, and it *moves them* when the project is renamed.
+ * That makes the directory the more current claim about which project a log
+ * belongs to. Note this compares an encoding of the known root against the
+ * directory name — it never decodes a name, which is not recoverable.
+ *
+ * **A recorded `cwd`.** Needed because a session launched from a subdirectory
+ * lands in a differently-named directory, and because `relocated` records point
+ * at worktrees beneath the project.
+ *
+ * Neither alone is enough, and the reason is a rename. When a project is
+ * renamed the directory follows, but the `cwd` inside already-written records
+ * does not: the older logs still name the old path forever. Matching on `cwd`
+ * alone silently drops every session from before the rename — 23 of 29 in the
+ * corpus this was found in — and the damage is not that they vanish (they do
+ * not; nothing is ever synced away) but that they fall out of the generated
+ * index while remaining on disk, which is precisely the shape of evidence
+ * nobody can audit.
+ *
+ * The one cost: the encoding is not injective, so `/Users/a/b-c` and
+ * `/Users/a/b/c` share a directory name. Two projects related that way would
+ * see each other's logs. That is rare, and it is the lesser failure.
  */
-export function belongsToProject(identity: LogIdentity, root: string): boolean {
+export function belongsToProject(
+  identity: LogIdentity,
+  root: string,
+  projectDirName?: string,
+): boolean {
   if (identity.sidechain) return false;
+  if (projectDirName !== undefined && projectDirName === encodeProjectDir(root)) {
+    return true;
+  }
   return identity.cwds.some((dir) => isWithin(root, dir));
 }
 
@@ -129,7 +156,7 @@ export function discover(logRoot: string, root: string): DiscoveredLog[] {
   for (const path of listLogFiles(logRoot)) {
     const records = readLogFile(path);
     const identity = readIdentity(path, records);
-    if (!belongsToProject(identity, root)) continue;
+    if (!belongsToProject(identity, root, basename(dirname(path)))) continue;
     found.push({ ...identity, records });
   }
 

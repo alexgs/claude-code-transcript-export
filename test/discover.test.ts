@@ -150,3 +150,60 @@ describe('parseRecords', () => {
     expect(records).toHaveLength(1);
   });
 });
+
+describe('discover, renamed projects', () => {
+  /**
+   * The case this exists for. A project renamed from `old-name` to `new-name`
+   * has its log directory moved by Claude Code, but every record written before
+   * the rename still carries the old `cwd` forever.
+   */
+  function renamedProject() {
+    const logRoot = tempDir();
+    const root = '/work/new-name';
+    const dir = join(logRoot, '-work-new-name');
+
+    writeLog(join(dir, 'before-rename.jsonl'), [
+      { type: 'mode', sessionId: 'before' },
+      userRecord('old work', { sessionId: 'before', cwd: '/work/old-name' }),
+    ]);
+    writeLog(join(dir, 'after-rename.jsonl'), [
+      { type: 'mode', sessionId: 'after' },
+      userRecord('new work', { sessionId: 'after', cwd: root }),
+    ]);
+
+    return { logRoot, root };
+  }
+
+  it('finds sessions from before the rename', () => {
+    const { logRoot, root } = renamedProject();
+    const ids = discover(logRoot, root)
+      .map((log) => log.sessionId)
+      .sort();
+    expect(ids).toEqual(['after', 'before']);
+  });
+
+  it('still rejects a sidechain log sitting in the right directory', () => {
+    const { logRoot, root } = renamedProject();
+    writeLog(join(logRoot, '-work-new-name', 'sub.jsonl'), [
+      userRecord('subagent', { sessionId: 'sub', cwd: root, isSidechain: true }),
+    ]);
+    expect(discover(logRoot, root).map((l) => l.sessionId)).not.toContain('sub');
+  });
+
+  it('does not pull in an unrelated project directory', () => {
+    const { logRoot, root } = renamedProject();
+    writeLog(join(logRoot, '-work-somethingelse', 'other.jsonl'), [
+      userRecord('other', { sessionId: 'other', cwd: '/work/somethingelse' }),
+    ]);
+    expect(discover(logRoot, root).map((l) => l.sessionId)).not.toContain('other');
+  });
+
+  it('matches on cwd when the directory name does not match', () => {
+    // A subdirectory launch: different directory name, cwd inside the project.
+    const logRoot = tempDir();
+    writeLog(join(logRoot, '-work-new-name-scripts', 's.jsonl'), [
+      userRecord('x', { sessionId: 's', cwd: '/work/new-name/scripts' }),
+    ]);
+    expect(discover(logRoot, '/work/new-name')).toHaveLength(1);
+  });
+});
