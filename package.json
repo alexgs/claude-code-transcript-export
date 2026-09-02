@@ -1,5 +1,5 @@
 {
-  "name": "cctx",
+  "name": "@alexgs/claude-code-transcript-export",
   "version": "0.1.0",
   "description": "Extract Claude Code session logs into readable, committable markdown transcripts.",
   "keywords": [

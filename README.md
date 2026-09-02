@@ -1,4 +1,4 @@
-# cctx
+# Claude Code Transcript Export (cctx)
 
 Extract Claude Code session logs into readable, committable markdown transcripts.
 
