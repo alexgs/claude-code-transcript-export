@@ -18,9 +18,10 @@ exports[`schema snapshot > derives the session metadata it should 1`] = `
     "Assistant",
     "Human",
     "Assistant",
+    "Human",
   ],
   "title": "The name I gave it",
-  "turnCount": 4,
+  "turnCount": 5,
   "updated": "2026-08-24",
 }
 `;
@@ -47,7 +48,7 @@ session_id: fixture0-1111-2222-3333-444444444444
 source: claude-code
 created: 2026-08-24
 updated: 2026-08-24
-turns: 4
+turns: 5
 extracted: 2026-09-02
 kind: bg
 continued_in: fixture1-1111-2222-3333-444444444444
@@ -76,6 +77,20 @@ A question with a screenshot.
 Reply to the screenshot.
 
 > [unhandled block type: future_block_type]
+
+Two decisions before I start.
+
+## [5] Human
+
+**Which way should the schema go?**
+
+The narrow one
+
+> Narrow, but leave a note where the other fields would go.
+
+**How should the work be shaped?**
+
+Neither — do the first step, then we talk
 "
 `;
 
@@ -84,16 +99,16 @@ exports[`schema snapshot > sees the record and block types it expects 1`] = `
   "blockTypes": {
     "future_block_type": 1,
     "image": 1,
-    "text": 4,
+    "text": 5,
     "thinking": 1,
-    "tool_result": 1,
-    "tool_use": 1,
+    "tool_result": 3,
+    "tool_use": 3,
   },
-  "humanTurns": 2,
+  "humanTurns": 3,
   "recordTypes": {
     "agent-name": 1,
     "ai-title": 1,
-    "assistant": 4,
+    "assistant": 6,
     "continued-in": 1,
     "custom-title": 1,
     "future_record_type": 1,
@@ -101,8 +116,8 @@ exports[`schema snapshot > sees the record and block types it expects 1`] = `
     "permission-mode": 1,
     "queue-operation": 1,
     "relocated": 1,
-    "user": 5,
+    "user": 7,
   },
-  "userRecords": 5,
+  "userRecords": 7,
 }
 `;
