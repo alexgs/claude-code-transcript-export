@@ -24,6 +24,19 @@ const toolResult = (): RawRecord => ({
   message: { role: 'user', content: [{ type: 'tool_result', content: 'output' }] },
 });
 
+/** An answered question widget: a `tool_result` record that is a human turn. */
+const answered = (answer: string): RawRecord => ({
+  type: 'user',
+  message: {
+    role: 'user',
+    content: [{ type: 'tool_result', content: 'Your questions have been answered.' }],
+  },
+  toolUseResult: {
+    questions: [{ question: 'Which way?', options: [] }],
+    answers: { 'Which way?': answer },
+  },
+});
+
 describe('isHumanTurn', () => {
   it('accepts authored prose', () => {
     expect(isHumanTurn(human('do the thing'))).toBe(true);
@@ -60,6 +73,20 @@ describe('isHumanTurn', () => {
 
   it('rejects assistant records', () => {
     expect(isHumanTurn(assistant('hello'))).toBe(false);
+  });
+
+  it('accepts an answered question widget despite it being all tool_result', () => {
+    // The one exception to the rule above. The author chose an option, and
+    // the choice is recorded nowhere else in the log.
+    expect(isHumanTurn(answered('The narrow one'))).toBe(true);
+  });
+
+  it('still rejects a widget the author dismissed', () => {
+    const dismissed: RawRecord = {
+      ...toolResult(),
+      toolUseResult: "Error: The user doesn't want to proceed with this tool use.",
+    };
+    expect(isHumanTurn(dismissed)).toBe(false);
   });
 });
 
@@ -101,6 +128,24 @@ describe('buildTurns', () => {
     ]);
     expect(turns).toHaveLength(2);
     expect(turns[1]?.text).toBe('real reply');
+  });
+
+  it('splits the assistant run around an answered question widget', () => {
+    // Which is what actually happened: the assistant stopped and waited.
+    const turns = buildTurns([
+      human('go'),
+      assistant('two decisions first'),
+      answered('The narrow one'),
+      assistant('starting on the narrow one'),
+    ]);
+    expect(turns.map((t) => t.speaker)).toEqual([
+      'Human',
+      'Assistant',
+      'Human',
+      'Assistant',
+    ]);
+    expect(turns[2]?.text).toBe('**Which way?**\n\nThe narrow one');
+    expect(parityReport(turns).alternationBreaks).toBe(0);
   });
 
   it('does not emit a turn for a tool-result-only user record', () => {
