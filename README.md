@@ -74,6 +74,13 @@ unique to the transcript is the prose. Pass `--keep-tools` if you disagree.
 **Images are kept.** Screenshots you paste exist nowhere but the log, so they
 are written alongside the transcript, named by a hash of their content.
 
+**So are the answers you give a question widget.** When Claude asks a
+multiple-choice question, the option you picked — and anything you typed into
+"Other", or added as a note — is a tool result, and would fall under the rule
+above. It is also a decision the rest of the session proceeds on, recorded
+nowhere else. Those render as a turn of yours, question and answer, whatever
+`--keep-tools` says.
+
 **Dates are local.** A session beginning `2026-08-25T00:13Z` is 17:13 on
 2026-08-24 where you were sitting, and so is the commit it produced.
 
