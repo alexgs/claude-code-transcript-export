@@ -45,6 +45,13 @@ export interface RawRecord {
   /** `relocated` records: a working directory the session moved to. */
   relocatedCwd?: string;
   message?: { role?: string; content?: RawBlock[] | string };
+  /**
+   * Structured result of the tool call this record answers, alongside the
+   * `tool_result` block. Only `AskUserQuestion` is read out of it: its
+   * `{ questions, answers, annotations }` is the only place an author's
+   * widget selection is recorded. See `renderAnsweredQuestions`.
+   */
+  toolUseResult?: unknown;
   [key: string]: unknown;
 }
 

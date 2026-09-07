@@ -157,15 +157,120 @@ export function renderBlock(
   }
 }
 
-/** The text of one record under the given policy. */
+/**
+ * The `toolUseResult` of an answered `AskUserQuestion` — the question widget.
+ *
+ * Shape observed, not documented, like everything else here (§3.1). `answers`
+ * maps each question's text to the label of the option the author picked, to
+ * their own prose when they took "Other", or to a comma-joined list when the
+ * question allowed several. `annotations` is keyed by the same question text
+ * and may carry `notes`: further prose typed alongside the selection.
+ */
+interface AnsweredQuestions {
+  answers: Record<string, unknown>;
+  annotations?: Record<string, unknown>;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The answered-widget payload of a record, or `null` for anything else.
+ *
+ * Both `questions` and `answers` are required. A dismissed widget — the author
+ * hit escape and typed instead — carries a plain error string here, and a
+ * rejected one carries no answers; neither is a turn, and the prose the author
+ * typed instead arrives as an ordinary `user` record anyway.
+ */
+function answeredQuestions(record: RawRecord): AnsweredQuestions | null {
+  const result = record.toolUseResult;
+  if (!isRecord(result)) return null;
+  if (!Array.isArray(result.questions)) return null;
+  if (!isRecord(result.answers)) return null;
+
+  return {
+    answers: result.answers,
+    annotations: isRecord(result.annotations) ? result.annotations : undefined,
+  };
+}
+
+/** One answer as a line. Lists arrive joined already; defend anyway. */
+function answerText(answer: unknown): string {
+  if (Array.isArray(answer)) return answer.map((a) => String(a).trim()).join(', ');
+  return typeof answer === 'string' ? answer.trim() : '';
+}
+
+/** Prose as a blockquote, blank lines included so the quote stays one block. */
+function blockquote(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => (line.trim() === '' ? '>' : `> ${line}`))
+    .join('\n');
+}
+
+/**
+ * An answered question widget as markdown, or `null` when the record is not
+ * one.
+ *
+ * **This is authored content that exists nowhere else in the log**, which is
+ * why it survives `tools: strip`. The default in §6.1 rests on tool payloads
+ * being redundant with git — anything authored through a tool lands in the
+ * working tree and the commit captures it. That argument does not reach here.
+ * Across the corpus this was written against, 10 of 66 answers are free text
+ * the author typed into "Other" and 5 widgets carry `notes`; a transcript that
+ * drops them loses a decision the rest of the session then proceeds on. The
+ * argument for keeping it is the same argument §1 makes for images.
+ *
+ * The question text is rendered because an answer without it is unreadable.
+ * The options *not* taken are not: they are assistant prose, and the turns
+ * around the widget generally restate whatever mattered about them.
+ */
+export function renderAnsweredQuestions(record: RawRecord): string | null {
+  const result = answeredQuestions(record);
+  if (result === null) return null;
+
+  const parts: string[] = [];
+
+  for (const [question, answer] of Object.entries(result.answers)) {
+    const text = answerText(answer);
+    if (text === '') continue;
+
+    // Newlines collapse: the question is one string in the widget, and a
+    // literal newline inside `**...**` would break the emphasis in half.
+    parts.push(`**${question.replace(/\s+/g, ' ').trim()}**\n\n${text}`);
+
+    const annotation = result.annotations?.[question];
+    const notes = isRecord(annotation) ? annotation.notes : undefined;
+    if (typeof notes === 'string' && notes.trim() !== '') {
+      parts.push(blockquote(notes.trim()));
+    }
+  }
+
+  return parts.length > 0 ? parts.join('\n\n') : null;
+}
+
+/**
+ * The text of one record under the given policy.
+ *
+ * An answered question widget replaces its own `tool_result` block rather than
+ * rendering alongside it: under `tools: keep` the raw payload would otherwise
+ * repeat every question and answer a second time as JSON.
+ */
 export function recordText(record: RawRecord, context: RenderContext = {}): string {
   const content = record.message?.content;
   if (typeof content === 'string') return content.trim();
   if (!Array.isArray(content)) return '';
 
-  return content
-    .map((block) => renderBlock(block, context))
-    .filter((part): part is string => part !== null && part.trim() !== '')
-    .join('\n\n')
-    .trim();
+  const answered = renderAnsweredQuestions(record);
+
+  const parts = content
+    .map((block) =>
+      answered !== null && block?.type === 'tool_result'
+        ? null
+        : renderBlock(block, context),
+    )
+    .filter((part): part is string => part !== null && part.trim() !== '');
+
+  return (answered !== null ? [answered, ...parts] : parts).join('\n\n').trim();
 }
