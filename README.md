@@ -93,6 +93,13 @@ reported. Nothing else, ever — the logs are ephemeral and this output is the
 durable copy, so a directory sync would delete precisely the transcripts that
 can no longer be regenerated. Orphaned images are reported but never deleted.
 
+**The index survives a machine move.** Logs are not committed and transcripts
+are, so a new machine — a cloud dev box, a reinstall — has the transcripts and
+none of the logs behind them. Rows for those are read back out of the
+transcripts themselves rather than dropped, alternation counts included, and the
+index says how many. Their images stay off the orphan report for the same
+reason.
+
 ## Configuration
 
 `.claude-export.yaml`, at the project root. `cctx init` writes a commented
