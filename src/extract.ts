@@ -1,5 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
+import { readTranscripts, type CarriedTranscript } from './carry.js';
 import { readCommits, commitsInWindow, type Commit } from './commits.js';
 import { contentPolicy, type Config } from './config.js';
 import { slugify } from './content.js';
@@ -42,6 +43,11 @@ export interface ExtractSummary {
   skipped: SkippedSession[];
   /** Transcripts deleted, with the rule that removed them. */
   removed: { name: string; reason: 'renamed' | 'excluded' }[];
+  /**
+   * Index rows read back from transcripts on disk, because no log on this
+   * machine can regenerate them. See `carry.ts`.
+   */
+  carried: CarriedTranscript[];
   /** Reported only; never deleted. */
   orphanImages: string[];
 }
@@ -125,8 +131,25 @@ export function extract(options: ExtractOptions): ExtractSummary {
     imagesWritten: [],
     skipped,
     removed: [],
+    carried: [],
     orphanImages: [],
   };
+
+  // Read before anything is written, so this is the state the previous run left
+  // and a dry run reports it truthfully. Files this run is about to rewrite,
+  // rename away or delete are filtered out by id below; what is left is the
+  // transcripts whose logs are gone.
+  const onDisk = readTranscripts(outDir);
+  const regenerated = new Set(sessions.map((s) => s.id));
+  summary.carried = onDisk.filter((t) => {
+    if (regenerated.has(t.id)) return false;
+    if (config.exclude.includes(t.id)) return false;
+    // A non-empty `include` is opt-in-only, and that has to hold for a row the
+    // index carries as much as for one it regenerates: otherwise a session
+    // deliberately left out reappears in the table the moment its log is gone.
+    if (config.include.length > 0 && !config.include.includes(t.id)) return false;
+    return true;
+  });
 
   if (options.dryRun === true) return summary;
 
@@ -172,6 +195,7 @@ export function extract(options: ExtractOptions): ExtractSummary {
         preamble: config.index.preamble,
         excluded,
         listExcluded: config.index.listExcluded,
+        carried: summary.carried,
       }),
     );
     if (wrote) summary.written += 1;
@@ -188,6 +212,19 @@ export function extract(options: ExtractOptions): ExtractSummary {
     if (!summary.removed.some((r) => r.name === name)) {
       summary.removed.push({ name, reason: 'excluded' });
     }
+  }
+
+  // Images a transcript still on disk links to are referenced, whether or not a
+  // log for it survives. Without this, moving a project to a new machine
+  // reports every image from every older session as an orphan — with the
+  // command to delete it — while the transcript pointing at it sits right
+  // there. Counted after the pruning above, so a transcript this run deleted
+  // stops holding its images: excluding a session should surrender them to the
+  // orphan report, which is the only way the author is told they are there.
+  const removedNames = new Set(summary.removed.map((r) => r.name));
+  for (const transcript of onDisk) {
+    if (removedNames.has(transcript.filename)) continue;
+    for (const image of transcript.images) referencedImages.add(image);
   }
 
   summary.orphanImages = findOrphanImages(imageDir, referencedImages);

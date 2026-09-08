@@ -6,6 +6,7 @@ import {
 } from '../src/render/transcript.js';
 import { parityStatement, renderIndex } from '../src/render/index.js';
 import { commitsInWindow, readCommits } from '../src/commits.js';
+import type { CarriedTranscript } from '../src/carry.js';
 import type { Session } from '../src/types.js';
 
 const US = '\x1f';
@@ -169,6 +170,56 @@ describe('renderIndex', () => {
   it('says nothing about exclusions when told not to', () => {
     const out = renderIndex([session()], { excluded: ['x'], listExcluded: 'none' });
     expect(out).not.toContain('withheld');
+  });
+});
+
+describe('renderIndex with carried rows', () => {
+  const carried = (over: Partial<CarriedTranscript> = {}): CarriedTranscript => ({
+    filename: '2026-08-20--older--11111111.md',
+    id: '11111111-2345-6789-abcd-ef0123456789',
+    title: 'An older session',
+    created: '2026-08-20',
+    turns: 7,
+    parity: { turns: 7, startsWithHuman: true, alternationBreaks: 0 },
+    images: [],
+    ...over,
+  });
+
+  it('sorts carried rows in among the regenerated ones', () => {
+    const out = renderIndex([session()], { carried: [carried()] });
+    const table = out.slice(out.indexOf('| --- |'));
+    expect(table).toContain('| 2026-08-20 | An older session | 7 |');
+    expect(table.indexOf('An older session')).toBeLessThan(table.indexOf('A session'));
+  });
+
+  it('says how many rows it could not regenerate', () => {
+    expect(renderIndex([session()], { carried: [carried()] })).toContain(
+      'One row below was read back',
+    );
+    expect(
+      renderIndex([session()], { carried: [carried(), carried({ id: 'b' })] }),
+    ).toContain('2 of the rows below were read back');
+  });
+
+  it('says nothing about carrying when there is nothing to carry', () => {
+    expect(renderIndex([session()])).not.toContain('read back');
+  });
+
+  it('counts a carried transcript in the alternation statement', () => {
+    const broken = carried({
+      parity: { turns: 3, startsWithHuman: false, alternationBreaks: 1 },
+    });
+    const statement = parityStatement([session()], [broken]);
+    expect(statement).toContain('1 place');
+    expect(statement).toContain('opening with an assistant turn');
+  });
+
+  it('leaves an unmeasurable transcript out of the count, and says so', () => {
+    const statement = parityStatement([session()], [carried({ parity: null })]);
+    expect(statement).toContain('without exception');
+    expect(statement).toContain(
+      '1 carried-forward transcript could not be re-measured',
+    );
   });
 });
 

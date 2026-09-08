@@ -147,6 +147,16 @@ describe('cctx extract', () => {
     expect(result.err).toContain('unrecognized argument');
   });
 
+  it('names the transcripts it carried forward', () => {
+    const { logRoot, root } = project();
+    run(['--log-root', logRoot], root);
+
+    // The same project, on a machine the old logs never reached.
+    const result = run(['--log-root', tempDir('cctx-empty-logs-')], root);
+    expect(result.out).toContain('sessions: 0');
+    expect(result.out).toContain('carried forward: 1 transcript(s)');
+  });
+
   it('exits 2 when the log root does not exist', () => {
     const { root } = project();
     const result = run(['--log-root', '/no/such/dir'], root);

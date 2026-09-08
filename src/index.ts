@@ -66,6 +66,14 @@ export {
 export { commitsInWindow, readCommits, type Commit } from './commits.js';
 
 export {
+  parseTranscript,
+  readImageLinks,
+  readTranscripts,
+  readTurnHeadings,
+  type CarriedTranscript,
+} from './carry.js';
+
+export {
   frontmatterFor,
   readExtractedDate,
   renderTranscript,

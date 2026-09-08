@@ -115,6 +115,17 @@ function reportExtract(summary: ExtractSummary, out: NodeJS.WritableStream): voi
       `unchanged: ${summary.unchanged}, turns: ${summary.turns}\n`,
   );
 
+  if (summary.carried.length > 0) {
+    // Named as a distinct thing rather than folded into `sessions:`, because
+    // it is the answer to "why does the index list more than `cctx list` finds"
+    // — most often, a project that moved to a machine the old logs never
+    // reached.
+    out.write(
+      `carried forward: ${summary.carried.length} transcript(s) kept in the ` +
+        'index with no log on this machine\n',
+    );
+  }
+
   for (const image of summary.imagesWritten) out.write(`image written: ${image}\n`);
   for (const skip of summary.skipped) {
     out.write(`skipped (${skip.reason}): ${skip.title} [${skip.id.slice(0, 8)}]\n`);

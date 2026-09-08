@@ -8,10 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 writes them as markdown transcripts into a project's repository. Published as
 `@alexgsdev/claude-code-transcript-export`; the binary is `cctx`.
 
-The design and its reasoning live in `docs/specs/01-initial-specification.md`.
-**Read the relevant section before changing behaviour** — most non-obvious
-choices there are answers to a failure that already happened, and the section
-numbers are cited throughout the source.
+The design and its reasoning live in `docs/specs/01-initial-specification.md`,
+with later decisions in the numbered documents beside it, each naming the
+sections of 01 it amends. **Read the relevant section before changing
+behaviour** — most non-obvious choices there are answers to a failure that
+already happened, and the section numbers are cited throughout the source.
 
 ## Commands
 
@@ -82,6 +83,17 @@ newly-excluded transcripts are deleted and reported. Orphaned images are
 reported and left on disk. Nothing else is ever removed, and the tool must never
 sync the output directory to the logs — the logs get pruned, so a sync would
 delete precisely the transcripts that can no longer be regenerated.
+
+**The index is rebuilt from the output directory, not only from the logs**
+(spec 03). Every transcript on disk is read before anything is written; one
+whose session id no log this run saw can regenerate keeps its row, with the
+turn count from its frontmatter and its alternation re-measured from its
+`## [N] Speaker` headings. Without this, running on a machine the old logs
+never reached — a new dev box, a reinstall — rewrites `index.md` down to what
+that machine happens to hold, and reports every older session's images as
+orphans with the command to delete them. The headings are believed only when
+they number 1..n and agree with `turns:`; a body may quote a heading, and a
+half-parsed speaker sequence would report breaks that are not there.
 
 **Turn alternation is measured as adjacent same-speaker pairs**, never as
 `index % 2`. One break early in a long session flips every turn after it: the
