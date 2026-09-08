@@ -214,6 +214,19 @@ export function extract(options: ExtractOptions): ExtractSummary {
     }
   }
 
+  // Images a transcript still on disk links to are referenced, whether or not a
+  // log for it survives. Without this, moving a project to a new machine
+  // reports every image from every older session as an orphan — with the
+  // command to delete it — while the transcript pointing at it sits right
+  // there. Counted after the pruning above, so a transcript this run deleted
+  // stops holding its images: excluding a session should surrender them to the
+  // orphan report, which is the only way the author is told they are there.
+  const removedNames = new Set(summary.removed.map((r) => r.name));
+  for (const transcript of onDisk) {
+    if (removedNames.has(transcript.filename)) continue;
+    for (const image of transcript.images) referencedImages.add(image);
+  }
+
   summary.orphanImages = findOrphanImages(imageDir, referencedImages);
 
   return summary;

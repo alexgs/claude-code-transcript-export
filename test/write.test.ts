@@ -329,6 +329,36 @@ describe('a project whose logs are gone', () => {
     expect(readdirSync(outDir)).toContain('2026-08-24--first-session--abcdef01.md');
   });
 
+  it('does not report the images it still links to as orphans', () => {
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]).toString('base64');
+    const { logRoot, root } = scenario((project) => [
+      { type: 'mode', sessionId: SESSION_ID },
+      { type: 'ai-title', aiTitle: 'With a screenshot' },
+      {
+        type: 'user',
+        sessionId: SESSION_ID,
+        cwd: project,
+        timestamp: '2026-08-24T21:13:00Z',
+        message: {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'look at this' },
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: 'image/png', data: png },
+            },
+          ],
+        },
+      },
+    ]);
+    const first = run(logRoot, root);
+    expect(first.imagesWritten).toHaveLength(1);
+
+    // Without the transcript scan this reports the image as an orphan, with
+    // the command to delete the one output that cannot be regenerated.
+    expect(run(tempDir('cctx-empty-logs-'), root).orphanImages).toEqual([]);
+  });
+
   it('still honours an exclusion, deleting the transcript and dropping the row', () => {
     const { logRoot, root, outDir } = scenario();
     run(logRoot, root);
