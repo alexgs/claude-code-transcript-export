@@ -265,6 +265,103 @@ describe('extract, end to end', () => {
   });
 });
 
+/**
+ * The case this exists for: the project moved to a machine its old logs never
+ * reached. Simulated by running a second time against an empty log root, which
+ * is exactly what `~/.claude/projects` looks like on a fresh box.
+ */
+describe('a project whose logs are gone', () => {
+  it('keeps the index row, reading it back off the transcript', () => {
+    const { logRoot, root, outDir } = scenario();
+    run(logRoot, root);
+
+    const summary = run(tempDir('cctx-empty-logs-'), root);
+    expect(summary.sessions).toBe(0);
+    expect(summary.carried.map((c) => c.id)).toEqual([SESSION_ID]);
+
+    const index = readFileSync(join(outDir, 'index.md'), 'utf8');
+    expect(index).toContain(`\`${SESSION_ID}\``);
+    expect(index).toContain('| 2026-08-24 | First session | 2 |');
+    expect(index).toContain('One row below was read back');
+  });
+
+  it('counts the carried transcript in the alternation statement', () => {
+    const { logRoot, root, outDir } = scenario((project) => [
+      ...baseRecords(project, 'First session'),
+      // A second human turn in a row: a real alternation break, which must
+      // still be reported once the log behind it is gone.
+      userRecord('and another', {
+        sessionId: SESSION_ID,
+        cwd: project,
+        timestamp: '2026-08-24T21:15:00Z',
+      }),
+      userRecord('and another again', {
+        sessionId: SESSION_ID,
+        cwd: project,
+        timestamp: '2026-08-24T21:16:00Z',
+      }),
+    ]);
+    run(logRoot, root);
+    run(tempDir('cctx-empty-logs-'), root);
+
+    expect(readFileSync(join(outDir, 'index.md'), 'utf8')).toContain(
+      'there is 1 place',
+    );
+  });
+
+  it('THE INVARIANT still holds: a rerun with no logs writes nothing', () => {
+    const { logRoot, root } = scenario();
+    run(logRoot, root);
+    const empty = tempDir('cctx-empty-logs-');
+
+    const first = run(empty, root);
+    // The index changed once, gaining the carried-forward note.
+    expect(first.written).toBe(1);
+    expect(run(empty, root, config(), '2026-12-25').written).toBe(0);
+  });
+
+  it('never deletes the transcript itself', () => {
+    const { logRoot, root, outDir } = scenario();
+    run(logRoot, root);
+    const summary = run(tempDir('cctx-empty-logs-'), root);
+
+    expect(summary.removed).toEqual([]);
+    expect(readdirSync(outDir)).toContain('2026-08-24--first-session--abcdef01.md');
+  });
+
+  it('still honours an exclusion, deleting the transcript and dropping the row', () => {
+    const { logRoot, root, outDir } = scenario();
+    run(logRoot, root);
+
+    const summary = run(
+      tempDir('cctx-empty-logs-'),
+      root,
+      config({ exclude: [SESSION_ID] }),
+    );
+    expect(summary.carried).toEqual([]);
+    expect(summary.removed).toEqual([
+      { name: '2026-08-24--first-session--abcdef01.md', reason: 'excluded' },
+    ]);
+    expect(readFileSync(join(outDir, 'index.md'), 'utf8')).not.toContain(SESSION_ID);
+  });
+
+  it('reports what it would carry on a dry run, and writes nothing', () => {
+    const { logRoot, root } = scenario();
+    run(logRoot, root);
+
+    const summary = extract({
+      logRoot: tempDir('cctx-empty-logs-'),
+      root,
+      config: config(),
+      today: '2026-12-25',
+      commits: [],
+      dryRun: true,
+    });
+    expect(summary.carried).toHaveLength(1);
+    expect(summary.written).toBe(0);
+  });
+});
+
 describe('writeIfChanged', () => {
   it('preserves a body that contains an extracted: line', () => {
     const dir = tempDir();
