@@ -1,6 +1,6 @@
 {
   "name": "@alexgsdev/claude-code-transcript-export",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Extract Claude Code session logs into readable, committable markdown transcripts.",
   "keywords": [
     "claude",
