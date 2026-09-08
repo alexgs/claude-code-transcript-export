@@ -456,6 +456,9 @@ session id, plus:
 - `index.preamble` verbatim, if configured. This is where project-specific
   prose goes; the reference implementation hardcodes a paragraph about a
   validator and a topic index that means nothing to anyone else.
+- Rows for transcripts on disk that no log on this machine can regenerate,
+  read back out of the files themselves: specification 03. Without them the
+  index shrinks to whatever machine it was last generated on.
 
 ## 9. Idempotence
 
@@ -558,7 +561,8 @@ Four rules, in order of how much they can cost you:
    to remove it. Content-hash naming makes "unreferenced" an exact fact, so the
    report is trustworthy — but an image is the one output that cannot be
    regenerated once its log is pruned, which puts it on the wrong side of
-   rule 4.
+   rule 4. *Referenced* means referenced by any transcript still on disk when
+   the run ends, not by a session regenerated this run: specification 03.
 4. **Nothing else, ever.** The tool never syncs the output directory to the
    logs. The logs are ephemeral and the output is the durable record: a
    directory sync would delete precisely those transcripts whose JSONL has
@@ -630,7 +634,9 @@ and cancelled queued messages — prose that exists nowhere else — stay
 uncaptured. That is a known, accepted gap rather than an oversight.
 
 **Settled since.** Answered `AskUserQuestion` widgets, whose selections and
-free-text answers this document dropped twice over: specification 02.
+free-text answers this document dropped twice over: specification 02. And the
+index, which honoured §10.4 for every file except itself and so forgot every
+session whose log a machine move left behind: specification 03.
 
 ### 14.1 Settled during drafting
 
