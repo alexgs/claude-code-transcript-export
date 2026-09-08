@@ -302,7 +302,7 @@ sensibly be turned on.
 | --- | --- |
 | `text` | Verbatim. |
 | `thinking` | Dropped unless `thinking: keep`. |
-| `tool_use` / `tool_result` | Dropped unless `tools: keep`. |
+| `tool_use` / `tool_result` | Dropped unless `tools: keep`. Amended: an answered question widget survives regardless; see specification 02. |
 | `image` | Written to a file; see below. |
 | unknown | An explicit `> [unhandled block type: x]` marker, never a silent drop. |
 
@@ -357,6 +357,12 @@ A `user` record is a human turn when all hold:
 3. not `isSidechain` (currently always true; see §3.1)
 4. its content blocks are not *all* `tool_result`
 5. its text is non-empty after harness tags are stripped
+
+**Amended, one exception ahead of rule 4:** a record carrying an answered
+`AskUserQuestion` widget is a human turn even though it is nothing but a
+`tool_result`. The option the author picked — and the prose they typed into
+"Other" — is recorded nowhere else in the log. See specification 02, which also
+records the renumbering this cost.
 
 Harness tags stripped, with their contents: `local-command-caveat`,
 `local-command-stdout`, `command-name`, `command-message`, `command-args`,
@@ -622,6 +628,9 @@ copies do not both render. Probably an exact-text match against a subsequent
 user record in the same session. Until that rule exists the feature stays off,
 and cancelled queued messages — prose that exists nowhere else — stay
 uncaptured. That is a known, accepted gap rather than an oversight.
+
+**Settled since.** Answered `AskUserQuestion` widgets, whose selections and
+free-text answers this document dropped twice over: specification 02.
 
 ### 14.1 Settled during drafting
 

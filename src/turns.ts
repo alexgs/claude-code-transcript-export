@@ -1,4 +1,4 @@
-import { recordText, stripHarnessTags } from './content.js';
+import { recordText, renderAnsweredQuestions, stripHarnessTags } from './content.js';
 import type { RawRecord, SessionTurn } from './types.js';
 import type { RenderContext as Ctx } from './content.js';
 
@@ -21,6 +21,12 @@ export function isHumanTurn(record: RawRecord): boolean {
   if (record.type !== 'user') return false;
   if (record.isMeta) return false;
   if (record.isSidechain) return false;
+
+  // An answered question widget is the author speaking, even though the record
+  // is nothing but a `tool_result` and would fail the test below. The label
+  // they picked — and, when they took "Other", the prose they typed — exists
+  // nowhere else in the log. See specification 02, and `renderAnsweredQuestions`.
+  if (renderAnsweredQuestions(record) !== null) return true;
 
   const content = record.message?.content;
   if (typeof content === 'string') return stripHarnessTags(content) !== '';
