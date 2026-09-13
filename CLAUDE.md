@@ -125,7 +125,27 @@ handling changes. Update fixtures deliberately when the schema moves.
   re-add those paths.
 - Comments carry the *why*, at some length, where a decision is not obvious from
   the code. Match that density rather than stripping it.
-- Releases: bump `version` in `package.json`, merge, then tag `v<version>`.
-  `.github/workflows/release.yml` publishes via npm trusted publishing with no
-  token. It runs Node 24 deliberately — trusted publishing needs npm ≥ 11.5.1,
-  and no Node 22 release bundles npm 11.
+
+## Releases
+
+Work lands on `develop`; `main` is what has been released. Every merge to
+`main` publishes.
+
+1. Each PR to `develop` that changes `src/`, `package.json` or
+   `tsconfig.build.json` adds a changeset: `npm run changeset`. CI
+   (`require-changeset.yml`) fails without one; the `skip-changeset` label
+   bypasses it for changes nobody installing the package would notice.
+2. To release, branch from `develop`, run `npm run release:version`, and
+   commit. This consumes the changesets, bumps `package.json` and the
+   lockfile, and prepends to `CHANGELOG.md`. Edit the generated entries if
+   they read badly; they are the durable record. PR that to `develop`.
+3. PR `develop` to `main`. CI (`release-guard.yml`) fails unless the version
+   went up, `CHANGELOG.md` has a section for it, the lockfile agrees, no
+   changesets are left unapplied, and the tag does not exist yet.
+4. On merge, `release.yml` runs the full suite, publishes, and pushes the tag
+   `v<version>`. Do not tag by hand: that makes the workflow skip the publish,
+   since the tag is how it knows a version is already released.
+
+`release.yml` publishes via npm trusted publishing with no token, which is
+bound to the filename — don't rename it. It runs Node 24 deliberately —
+trusted publishing needs npm ≥ 11.5.1, and no Node 22 release bundles npm 11.

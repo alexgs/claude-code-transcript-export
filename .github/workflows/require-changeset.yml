@@ -1,0 +1,62 @@
+name: Require changeset
+
+# Every PR to develop that changes what npm ships must say how, in a
+# changeset, so the changelog is written when the change is fresh rather than
+# reconstructed at release time. PRs that touch only docs, tests or CI can opt
+# out with the `skip-changeset` label.
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  require-changeset:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changeset') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enforce a changeset for changes that ship
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Three dots: compare against the merge base, so commits that
+          # landed on develop after this branch was cut are not counted.
+          changed="$(git diff --name-only "$BASE...$HEAD")"
+
+          # What reaches users is dist/, compiled from src/ by
+          # tsconfig.build.json, plus the manifest. README changes ride along
+          # with the next release rather than forcing one.
+          if ! grep -qE '^(src/|package\.json$|tsconfig\.build\.json$)' <<<"$changed"; then
+            echo "No changes to shipped code; no changeset needed."
+            exit 0
+          fi
+
+          added="$(git diff --name-only --diff-filter=AM "$BASE...$HEAD" -- '.changeset/*.md' \
+            | grep -vx '.changeset/README.md' || true)"
+          if [ -n "$added" ]; then
+            echo "Changeset found:"
+            echo "$added"
+            exit 0
+          fi
+
+          # A release PR consumes the changesets rather than adding one: it
+          # deletes them and bumps the version instead.
+          version_at() {
+            git show "$1:package.json" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version'
+          }
+          if [ "$(version_at "$BASE")" != "$(version_at "$HEAD")" ]; then
+            echo "Version changed; treating this as a release PR."
+            exit 0
+          fi
+
+          echo "::error title=Missing changeset::This PR changes shipped code but adds no .changeset/*.md file. Run 'npm run changeset', or add the skip-changeset label if nothing user-visible changed."
+          exit 1

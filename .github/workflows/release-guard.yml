@@ -1,0 +1,71 @@
+name: Require version bump
+
+# Every merge to main publishes (release.yml), so every PR to main must carry
+# a new version, fully applied: the changesets consumed into CHANGELOG.md and
+# the lockfile agreeing with the manifest. Checking only that package.json
+# changed would let a half-finished `npm run release:version` through, and
+# release.yml would then publish without a changelog entry.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history and tags: the base commit and the existing tags are
+          # both read below.
+          fetch-depth: 0
+      - name: Check the version is bumped and applied
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          json_at() {
+            git show "$1:$2" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8'))$3"
+          }
+          base="$(json_at "$BASE" package.json .version)"
+          head="$(json_at "$HEAD" package.json .version)"
+          failed=0
+          fail() {
+            echo "::error title=Release guard::$1"
+            failed=1
+          }
+
+          # sort -V is right for plain x.y.z. It orders 1.0.0 before
+          # 1.0.0-rc.1, so leaving a prerelease will need a manual override.
+          newest="$(printf '%s\n%s\n' "$base" "$head" | sort -V | tail -n1)"
+          if [ "$base" = "$head" ] || [ "$newest" != "$head" ]; then
+            fail "package.json version must increase (main has $base, this PR has $head). Run 'npm run release:version' on develop before opening this PR."
+          fi
+
+          if git rev-parse -q --verify "refs/tags/v$head" >/dev/null; then
+            fail "v$head is already tagged."
+          fi
+
+          if ! git show "$HEAD:CHANGELOG.md" | grep -qxF "## $head"; then
+            fail "CHANGELOG.md has no '## $head' section."
+          fi
+
+          lock="$(json_at "$HEAD" package-lock.json ".packages['']?.version")"
+          if [ "$lock" != "$head" ]; then
+            fail "package-lock.json says $lock but package.json says $head. Run 'npm install --package-lock-only'."
+          fi
+
+          pending="$(git ls-tree --name-only "$HEAD" .changeset/ | grep -E '\.md$' | grep -vx '.changeset/README.md' || true)"
+          if [ -n "$pending" ]; then
+            fail "Unapplied changesets remain: $(echo $pending). Run 'npm run release:version'."
+          fi
+
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+          echo "Releasing $base -> $head."
