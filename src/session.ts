@@ -3,7 +3,13 @@ import { recordText } from './content.js';
 import type { RenderContext } from './content.js';
 import { resolveTitle, toLocalDate } from './titles.js';
 import { buildTurns } from './turns.js';
-import type { ContentPolicy, RawRecord, Session, SessionImage } from './types.js';
+import type {
+  ContentPolicy,
+  RawRecord,
+  SentFileSources,
+  Session,
+  SessionImage,
+} from './types.js';
 
 /** The last non-empty value of a field across records of one type. */
 function lastOf(
@@ -25,6 +31,8 @@ export interface ReadSessionOptions {
   policy?: ContentPolicy;
   /** Used when no record carries a session id. */
   fallbackId?: string;
+  /** Filesystem lookups for sent images the log lacks. See `sent.ts`. */
+  sources?: SentFileSources;
 }
 
 /**
@@ -63,6 +71,7 @@ export function readSession(
     policy: options.policy,
     sessionId8: id.slice(0, 8),
     collected: images,
+    sources: options.sources,
   };
 
   return {

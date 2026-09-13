@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import type { ContentPolicy, RawBlock, RawRecord, SessionImage } from './types.js';
+import type {
+  ContentPolicy,
+  RawBlock,
+  RawRecord,
+  SentFileSources,
+  SessionImage,
+} from './types.js';
 import { DEFAULT_CONTENT_POLICY } from './types.js';
 
 /**
@@ -50,7 +56,7 @@ export function slugify(title: string): string {
   return collapsed.slice(0, 60).replace(/-+$/, '') || 'untitled';
 }
 
-const EXTENSIONS: Record<string, string> = {
+export const EXTENSIONS: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
@@ -58,7 +64,7 @@ const EXTENSIONS: Record<string, string> = {
 };
 
 /** Bytes in a human-readable size, for the marker form. */
-function humanSize(bytes: number): string {
+export function humanSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -70,6 +76,11 @@ export interface RenderContext {
   sessionId8?: string;
   /** Images found while rendering are pushed here for the writer to persist. */
   collected?: SessionImage[];
+  /**
+   * Where a sent file's bytes are looked for when the log does not hold them.
+   * Absent means the log is the only source. See `sent.ts`.
+   */
+  sources?: SentFileSources;
 }
 
 /**
@@ -171,7 +182,7 @@ interface AnsweredQuestions {
   annotations?: Record<string, unknown>;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
