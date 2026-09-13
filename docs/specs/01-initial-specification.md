@@ -302,7 +302,7 @@ sensibly be turned on.
 | --- | --- |
 | `text` | Verbatim. |
 | `thinking` | Dropped unless `thinking: keep`. |
-| `tool_use` / `tool_result` | Dropped unless `tools: keep`. Amended: an answered question widget survives regardless; see specification 02. |
+| `tool_use` / `tool_result` | Dropped unless `tools: keep`. Amended: an answered question widget survives regardless; see specification 02. So does a file sent with `SendUserFile`, which also names its image by delivery rather than content; see specification 04. |
 | `image` | Written to a file; see below. |
 | unknown | An explicit `> [unhandled block type: x]` marker, never a silent drop. |
 

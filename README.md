@@ -74,6 +74,12 @@ unique to the transcript is the prose. Pass `--keep-tools` if you disagree.
 **Images are kept.** Screenshots you paste exist nowhere but the log, so they
 are written alongside the transcript, named by a hash of their content.
 
+**So are files Claude sends you.** A render Claude makes in `/tmp` and shows you
+with a caption never reaches your working tree. The transcript lists each sent
+file by path, with the image and the caption. The image comes from the log when
+Claude looked at it first, and otherwise is copied from where it was sent —
+once. A later run after `/tmp` is cleaned keeps that copy and the link to it.
+
 **So are the answers you give a question widget.** When Claude asks a
 multiple-choice question, the option you picked — and anything you typed into
 "Other", or added as a note — is a tool result, and would fall under the rule
@@ -142,6 +148,51 @@ import { discover, readSession, renderTranscript } from '@alexgsdev/claude-code-
 Everything is pure unless its name says otherwise — nothing below the CLI layer
 reads the clock, the environment, or your home directory. See
 [the specification](docs/specs/01-initial-specification.md) §12.
+
+## Releasing
+
+Work lands on `develop`; `main` is what has been released. Every merge to
+`main` publishes to npm. Changes are recorded as they are made with
+[Changesets](https://changesets.dev) and collected into
+[CHANGELOG.md](CHANGELOG.md) at release time.
+
+**While developing.** A PR to `develop` that changes `src/`, `package.json` or
+`tsconfig.build.json` must add a changeset:
+
+```sh
+npm run changeset
+```
+
+CI fails without one. Label the PR `skip-changeset` if nothing a user of the
+package would notice has changed.
+
+**To release:**
+
+1. Branch from an up-to-date `develop` and apply the pending changesets:
+
+   ```sh
+   git switch develop && git pull
+   git switch -c release-<version>
+   npm run release:version
+   ```
+
+   This deletes the changesets, bumps the version in `package.json` and
+   `package-lock.json`, and prepends an entry to `CHANGELOG.md`. Edit the
+   entry if it reads badly, then commit.
+
+2. Open a PR from the release branch to `develop` and merge it.
+
+3. Open a PR from `develop` to `main`. CI fails unless the version went up,
+   `CHANGELOG.md` has a section for it, the lockfile agrees, no changesets are
+   left unapplied, and the tag does not exist yet.
+
+4. Merge. `.github/workflows/release.yml` runs the full suite, publishes to
+   npm, and pushes the tag `v<version>`.
+
+Do not tag a release by hand. The workflow treats an existing tag as proof the
+version is already published and skips the publish. If a release run fails
+partway, re-run it from the Actions tab: it skips a publish that already
+happened and only pushes the missing tag.
 
 ## License
 

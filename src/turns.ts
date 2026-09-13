@@ -1,4 +1,5 @@
 import { recordText, renderAnsweredQuestions, stripHarnessTags } from './content.js';
+import { ImageReads, renderSentFiles } from './sent.js';
 import type { RawRecord, SessionTurn } from './types.js';
 import type { RenderContext as Ctx } from './content.js';
 
@@ -50,6 +51,7 @@ export function isHumanTurn(record: RawRecord): boolean {
  */
 export function buildTurns(records: RawRecord[], context: Ctx = {}): SessionTurn[] {
   const turns: SessionTurn[] = [];
+  const reads = new ImageReads();
   let assistantBuffer: string[] = [];
 
   const flush = () => {
@@ -60,6 +62,7 @@ export function buildTurns(records: RawRecord[], context: Ctx = {}): SessionTurn
 
   for (const record of records) {
     if (record.isSidechain) continue;
+    reads.observe(record);
 
     if (isHumanTurn(record)) {
       flush();
@@ -71,6 +74,16 @@ export function buildTurns(records: RawRecord[], context: Ctx = {}): SessionTurn
     if (record.type === 'assistant' && !record.isMeta) {
       const text = recordText(record, context);
       if (text) assistantBuffer.push(text);
+      continue;
+    }
+
+    // A file the assistant sent arrives as a tool result, but it is part of the
+    // assistant's reply, so it joins the run being coalesced rather than
+    // splitting it. It can create an assistant turn where the run was otherwise
+    // all tool traffic, which renumbers what follows; see specification 04.
+    if (record.type === 'user' && !record.isMeta) {
+      const sent = renderSentFiles(record, reads, context);
+      if (sent !== null) assistantBuffer.push(sent);
     }
   }
 

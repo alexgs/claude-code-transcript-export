@@ -96,7 +96,16 @@ export {
 } from './write.js';
 
 export {
+  ImageReads,
+  renderSentFiles,
+  sentFiles,
+  type SentAttachment,
+  type SentFiles,
+} from './sent.js';
+
+export {
   extract,
+  fileSources,
   readSessions,
   type ExtractOptions,
   type ExtractSummary,
@@ -111,6 +120,7 @@ export type {
   ImagePolicy,
   RawBlock,
   RawRecord,
+  SentFileSources,
   Session,
   SessionImage,
   SessionTurn,

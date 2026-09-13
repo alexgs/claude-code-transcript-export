@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.9
+
+### Patch Changes
+
+- 3a17de0: Render files the assistant sent with `SendUserFile` — path, image
+  and caption — into the assistant's turn (spec 04). Image bytes come from an
+  earlier `Read` in the log, a copy a previous run extracted, or the original
+  file when it is still on disk, so a rerun after `/tmp` is cleaned keeps the
+  image and writes nothing.
+
 ## 0.1.8
 
 ### Patch Changes

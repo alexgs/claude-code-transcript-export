@@ -1,5 +1,5 @@
-import { mkdirSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { mkdirSync, readFileSync, statSync } from 'node:fs';
+import { basename, isAbsolute, join, resolve } from 'node:path';
 import { readTranscripts, type CarriedTranscript } from './carry.js';
 import { readCommits, commitsInWindow, type Commit } from './commits.js';
 import { contentPolicy, type Config } from './config.js';
@@ -13,7 +13,7 @@ import {
   readSession,
   sessionFilename,
 } from './session.js';
-import type { Session } from './types.js';
+import type { SentFileSources, Session } from './types.js';
 import {
   findOrphanImages,
   pruneExcluded,
@@ -94,11 +94,41 @@ function selectionReason(session: Session, options: ExtractOptions): SkipReason 
   return null;
 }
 
+/** A regular file's bytes when it is exactly `size` long, else undefined. */
+function readSized(path: string, size?: number): Buffer | undefined {
+  try {
+    const stat = statSync(path);
+    if (!stat.isFile() || (size !== undefined && stat.size !== size)) return undefined;
+    return readFileSync(path);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Where a sent image is looked for when the log lacks it: the image directory
+ * a previous run wrote to, then the path it was sent from.
+ *
+ * Both are read-only. An original that is gone or has changed size is simply
+ * not found, and whatever an earlier run extracted stays where it is.
+ */
+export function fileSources(imageDir: string): SentFileSources {
+  return {
+    readExtracted: (filename) => readSized(join(imageDir, basename(filename))),
+    readOriginal: (path, size) =>
+      isAbsolute(path) ? readSized(path, size) : undefined,
+  };
+}
+
 /** Reads every log belonging to the project into sessions, links included. */
-export function readSessions(logs: DiscoveredLog[], config: Config): Session[] {
+export function readSessions(
+  logs: DiscoveredLog[],
+  config: Config,
+  sources?: SentFileSources,
+): Session[] {
   const policy = contentPolicy(config);
   const sessions = logs.map((log) =>
-    readSession(log.records, { policy, fallbackId: fallbackIdFor(log.path) }),
+    readSession(log.records, { policy, fallbackId: fallbackIdFor(log.path), sources }),
   );
   linkContinuations(sessions);
   sessions.sort((a, b) => `${a.created}${a.id}`.localeCompare(`${b.created}${b.id}`));
@@ -111,7 +141,11 @@ export function extract(options: ExtractOptions): ExtractSummary {
   const outDir = resolve(root, config.out);
   const imageDir = join(outDir, config.imageDir);
 
-  const sessions = readSessions(discover(options.logRoot, root), config);
+  const sessions = readSessions(
+    discover(options.logRoot, root),
+    config,
+    fileSources(imageDir),
+  );
 
   const selected: Session[] = [];
   const skipped: SkippedSession[] = [];

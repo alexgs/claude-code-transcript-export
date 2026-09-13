@@ -95,6 +95,12 @@ orphans with the command to delete them. The headings are believed only when
 they number 1..n and agree with `turns:`; a body may quote a heading, and a
 half-parsed speaker sequence would report breaks that are not there.
 
+**Sent-file images are named by `file_uuid`, not content hash** (spec 04).
+A rerun after `/tmp` is cleaned has no bytes to hash; a name derivable from the
+log is how it finds the copy an earlier run made instead of degrading the link
+to a marker. For the same reason the previous extraction is consulted *before*
+the original path, so a scratch file overwritten later never replaces it.
+
 **Turn alternation is measured as adjacent same-speaker pairs**, never as
 `index % 2`. One break early in a long session flips every turn after it: the
 index-parity version reported 61 breaks in a corpus that had 4.
