@@ -11,6 +11,7 @@ exports[`schema snapshot > derives the session metadata it should 1`] = `
   "id": "fixture0-1111-2222-3333-444444444444",
   "images": [
     "fixture0-4c4b6a3b.png",
+    "fixture0-c0ffee01.png",
   ],
   "kind": "bg",
   "speakers": [
@@ -19,9 +20,10 @@ exports[`schema snapshot > derives the session metadata it should 1`] = `
     "Human",
     "Assistant",
     "Human",
+    "Assistant",
   ],
   "title": "The name I gave it",
-  "turnCount": 5,
+  "turnCount": 6,
   "updated": "2026-08-24",
 }
 `;
@@ -48,7 +50,7 @@ session_id: fixture0-1111-2222-3333-444444444444
 source: claude-code
 created: 2026-08-24
 updated: 2026-08-24
-turns: 5
+turns: 6
 extracted: 2026-09-02
 kind: bg
 continued_in: fixture1-1111-2222-3333-444444444444
@@ -91,6 +93,22 @@ The narrow one
 **How should the work be shaped?**
 
 Neither — do the first step, then we talk
+
+## [6] Assistant
+
+Rendered the chart; looking at it before sending.
+
+Sent \`/tmp/fixture-scratch/chart.png\`
+
+![chart.png](images/fixture0-c0ffee01.png)
+
+Sent \`/tmp/fixture-scratch/never-read.png\`
+
+> [image: image/png, 2 KB, not in the log or on disk]
+
+Sent \`/work/fixture-project/notes.svg\`
+
+The chart, a render never read back, and the notes it came from.
 "
 `;
 
@@ -99,16 +117,16 @@ exports[`schema snapshot > sees the record and block types it expects 1`] = `
   "blockTypes": {
     "future_block_type": 1,
     "image": 1,
-    "text": 5,
+    "text": 6,
     "thinking": 1,
-    "tool_result": 3,
-    "tool_use": 3,
+    "tool_result": 5,
+    "tool_use": 5,
   },
   "humanTurns": 3,
   "recordTypes": {
     "agent-name": 1,
     "ai-title": 1,
-    "assistant": 6,
+    "assistant": 8,
     "continued-in": 1,
     "custom-title": 1,
     "future_record_type": 1,
@@ -116,8 +134,8 @@ exports[`schema snapshot > sees the record and block types it expects 1`] = `
     "permission-mode": 1,
     "queue-operation": 1,
     "relocated": 1,
-    "user": 7,
+    "user": 9,
   },
-  "userRecords": 7,
+  "userRecords": 9,
 }
 `;

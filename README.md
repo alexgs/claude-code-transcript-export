@@ -74,6 +74,12 @@ unique to the transcript is the prose. Pass `--keep-tools` if you disagree.
 **Images are kept.** Screenshots you paste exist nowhere but the log, so they
 are written alongside the transcript, named by a hash of their content.
 
+**So are files Claude sends you.** A render Claude makes in `/tmp` and shows you
+with a caption never reaches your working tree. The transcript lists each sent
+file by path, with the image and the caption. The image comes from the log when
+Claude looked at it first, and otherwise is copied from where it was sent —
+once. A later run after `/tmp` is cleaned keeps that copy and the link to it.
+
 **So are the answers you give a question widget.** When Claude asks a
 multiple-choice question, the option you picked — and anything you typed into
 "Other", or added as a note — is a tool result, and would fall under the rule
