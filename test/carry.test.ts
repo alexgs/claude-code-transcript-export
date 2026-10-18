@@ -39,6 +39,28 @@ describe('parseTranscript', () => {
       turns: 2,
       parity: { turns: 2, startsWithHuman: true, alternationBreaks: 0 },
       images: [],
+      frontmatter: {
+        title: 'A session',
+        session_id: 'abcdef01-2345-6789-abcd-ef0123456789',
+        source: 'claude-code',
+        created: '2026-08-24',
+        updated: '2026-08-24',
+        turns: 2,
+        extracted: '2026-09-02',
+      },
+    });
+  });
+
+  it('returns fields a consumer added, for the rows it carries', () => {
+    const doc = renderTranscript(session(), {
+      extractedOn: '2026-09-02',
+      source: 'claude-ai',
+      fields: { project_uuid: 'p1', branches_dropped: 2 },
+    });
+    expect(parseTranscript(NAME, doc)?.frontmatter).toMatchObject({
+      source: 'claude-ai',
+      project_uuid: 'p1',
+      branches_dropped: 2,
     });
   });
 
