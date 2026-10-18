@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0
+
+### Minor Changes
+
+- ab6dbff: The config file is now `.cctx.yaml` (or `.cctx.json`), and `cctx init` writes that name. `.claude-export.yaml` and `.claude-export.json` are still read, with a warning on stderr giving the command to rename the file. A legacy file left beside a new one is reported as ignored, and `cctx init` refuses when a config exists under either name.
+- f489310: Make the library usable by readers of other conversation sources. `renderTranscript`, `frontmatterFor` and `sessionFilename` now accept a `TranscriptSession` (the fields a transcript is rendered from) instead of a full `Session`, and `parityStatement` accepts anything with `turns`; `RenderTranscriptOptions` gains `source` (default `claude-code`) and `fields`, which appends extra frontmatter without overriding built-in keys; and `DEFAULT_CONTENT_POLICY` is exported. The README now documents the library. `cctx` output is unchanged.
+- fe04f8d: `parseTranscript` and `readTranscripts` now return each transcript's whole frontmatter as `CarriedTranscript.frontmatter`, including fields a consumer added through `renderTranscript`'s `fields` option, so carried-forward index rows can show them. The `carried` rows in `cctx extract --json` output include it too.
+
+### Patch Changes
+
+- ca7e34e: `--config <path>` now reads the file it names. It used to search upward from that file's directory and load the first standard config it found, so `--config ./other.yaml` silently read `.cctx.yaml` beside it, or one in a parent directory. The new `loadConfigFile` export does the same for library callers.
+
 ## 0.1.9
 
 ### Patch Changes
