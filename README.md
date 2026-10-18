@@ -23,7 +23,7 @@ Installs the `cctx` command. Requires Node 22 or newer.
 From anywhere inside your project:
 
 ```sh
-cctx init      # write .claude-export.yaml — its location marks the project root
+cctx init      # write .cctx.yaml — its location marks the project root
 cctx list      # see every session, with its UUID
 cctx           # write transcripts
 ```
@@ -108,8 +108,9 @@ reason.
 
 ## Configuration
 
-`.claude-export.yaml`, at the project root. `cctx init` writes a commented
-starter. Every key is optional; see
+`.cctx.yaml`, at the project root. `cctx init` writes a commented starter.
+A config under its old name, `.claude-export.yaml`, is still read, with a
+warning saying how to rename it. Every key is optional; see
 [the specification](docs/specs/01-initial-specification.md) for the full list.
 
 Sessions are selected by UUID — titles are model-generated and change while you
