@@ -1,6 +1,6 @@
 import { stringify as stringifyYaml } from 'yaml';
 import type { Commit } from '../commits.js';
-import type { Session } from '../types.js';
+import type { TranscriptSession } from '../types.js';
 
 export interface RenderTranscriptOptions {
   /**
@@ -16,20 +16,36 @@ export interface RenderTranscriptOptions {
   project?: string;
   /** Commits made while the session was open. Omitted when empty. */
   commits?: Commit[];
+  /**
+   * Where the conversation came from. `claude-code` unless a consumer reading
+   * some other source says otherwise; `cctx` never does.
+   */
+  source?: string;
+  /**
+   * Further frontmatter, appended after everything above in key order.
+   *
+   * For a consumer with facts of its own to record — a claude.ai project id, a
+   * conversation URL. **A key this function already writes is ignored here,
+   * never overridden.** `session_id`, `created`, `turns` and `extracted` are
+   * what `readExtractedDate`, `parseTranscript` and the index read back; a
+   * consumer able to replace them could write a transcript the rest of the
+   * library misreads.
+   */
+  fields?: Record<string, unknown>;
 }
 
 /** The frontmatter block, as an object, before serialization. */
 export function frontmatterFor(
-  session: Session,
+  session: TranscriptSession,
   options: RenderTranscriptOptions,
 ): Record<string, unknown> {
   const commits = options.commits ?? [];
 
-  return {
+  const base: Record<string, unknown> = {
     title: session.title,
     session_id: session.id,
     ...(options.project !== undefined ? { project: options.project } : {}),
-    source: 'claude-code',
+    source: options.source ?? 'claude-code',
     created: session.created,
     updated: session.updated,
     turns: session.turns.length,
@@ -43,11 +59,17 @@ export function frontmatterFor(
       ? { commits_in_window: commits.map((c) => `${c.hash} ${c.subject}`) }
       : {}),
   };
+
+  for (const [key, value] of Object.entries(options.fields ?? {})) {
+    if (!(key in base)) base[key] = value;
+  }
+
+  return base;
 }
 
 /** One session as markdown. Pure: no clock, no filesystem, no environment. */
 export function renderTranscript(
-  session: Session,
+  session: TranscriptSession,
   options: RenderTranscriptOptions,
 ): string {
   const frontmatter = stringifyYaml(frontmatterFor(session, options));

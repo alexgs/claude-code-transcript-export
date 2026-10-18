@@ -115,6 +115,8 @@ export {
 
 export { formatProbe, probe, probeRecords, type ProbeReport } from './cli/probe.js';
 
+export { DEFAULT_CONTENT_POLICY } from './types.js';
+
 export type {
   ContentPolicy,
   ImagePolicy,
@@ -127,4 +129,5 @@ export type {
   Speaker,
   ThinkingPolicy,
   ToolPolicy,
+  TranscriptSession,
 } from './types.js';
