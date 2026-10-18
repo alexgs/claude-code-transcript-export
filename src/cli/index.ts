@@ -10,6 +10,7 @@ import {
   LEGACY_CONFIG_NAMES,
   UsageError,
   loadConfig,
+  loadConfigFile,
   type Config,
 } from '../config.js';
 import { discover, listLogFiles } from '../discover.js';
@@ -83,10 +84,7 @@ function resolveContext(options: Options, cwd: string): Resolved {
   const logRoot = resolve(options.logRoot ?? defaultLogRoot(homedir()));
 
   if (options.config !== undefined) {
-    const path = resolve(options.config);
-    if (!existsSync(path)) throw new UsageError(`no such config file: ${path}`);
-    const loaded = loadConfig(path.replace(/\/[^/]+$/, ''));
-    if (loaded === null) throw new UsageError(`could not read config at ${path}`);
+    const loaded = loadConfigFile(resolve(options.config));
     return { ...loaded, config: applyOverrides(loaded.config, options), logRoot };
   }
 

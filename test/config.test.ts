@@ -7,6 +7,7 @@ import {
   configNameWarnings,
   findConfig,
   loadConfig,
+  loadConfigFile,
   mergeConfig,
   parseConfigFile,
 } from '../src/config.js';
@@ -162,5 +163,35 @@ describe('parseConfigFile', () => {
 
   it('reports a syntax error as a usage error', () => {
     expect(() => parseConfigFile('c.json', '{oops')).toThrow(UsageError);
+  });
+});
+
+describe('loadConfigFile', () => {
+  it('reads the file named, not a standard name beside it', () => {
+    const root = tempDir();
+    writeFileSync(join(root, '.cctx.yaml'), 'out: standard\n');
+    writeFileSync(join(root, 'other.yaml'), 'out: other\n');
+    const resolved = loadConfigFile(join(root, 'other.yaml'));
+    expect(resolved.config.out).toBe('other');
+    expect(resolved.configPath).toBe(join(root, 'other.yaml'));
+    expect(resolved.root).toBe(root);
+  });
+
+  it('reads a file with no standard config anywhere above it', () => {
+    const root = tempDir();
+    writeFileSync(join(root, 'settings.json'), '{"out":"j"}');
+    expect(loadConfigFile(join(root, 'settings.json')).config.out).toBe('j');
+  });
+
+  it('warns about a legacy name, but not about a legacy file beside a chosen one', () => {
+    const root = tempDir();
+    writeFileSync(join(root, '.claude-export.yaml'), 'out: old\n');
+    writeFileSync(join(root, 'chosen.yaml'), 'out: chosen\n');
+    expect(loadConfigFile(join(root, '.claude-export.yaml')).warnings).toHaveLength(1);
+    expect(loadConfigFile(join(root, 'chosen.yaml')).warnings).toEqual([]);
+  });
+
+  it('is a usage error when the file does not exist', () => {
+    expect(() => loadConfigFile(join(tempDir(), 'missing.yaml'))).toThrow(UsageError);
   });
 });

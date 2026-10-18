@@ -111,6 +111,18 @@ describe('cctx extract', () => {
     expect(run(['--log-root', logRoot], root).err).toBe('');
   });
 
+  it('uses the file --config names, even beside a standard config', () => {
+    const { logRoot, root } = project();
+    writeFileSync(join(root, 'other.yaml'), 'out: elsewhere\n');
+    const result = run(
+      ['--log-root', logRoot, '--config', join(root, 'other.yaml')],
+      tempDir(),
+    );
+    expect(result.code).toBe(0);
+    expect(existsSync(join(root, 'elsewhere', 'index.md'))).toBe(true);
+    expect(existsSync(join(root, 'transcripts'))).toBe(false);
+  });
+
   it('writes transcripts and reports the resolved root', () => {
     const { logRoot, root } = project();
     const result = run(['--log-root', logRoot], root);

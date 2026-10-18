@@ -19,6 +19,7 @@ export {
   contentPolicy,
   findConfig,
   loadConfig,
+  loadConfigFile,
   mergeConfig,
   parseConfigFile,
   type Config,

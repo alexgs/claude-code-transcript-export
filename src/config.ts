@@ -290,6 +290,36 @@ export function loadConfig(
   };
 }
 
+/**
+ * Loads exactly the config file at `path`, for `--config`.
+ *
+ * No discovery: the file named is the file read, whatever it is called, and its
+ * directory is the project root. `--config` used to hand the file's directory
+ * to `loadConfig`, which walked up from there and read whichever standard name
+ * it found first — so `--config ./other.yaml` silently loaded `.cctx.yaml`
+ * beside it, or one in a parent, or failed when there was none.
+ *
+ * Only a legacy *name* is warned about. A legacy file beside an explicitly
+ * named one is not being shadowed by precedence; the author chose this file.
+ */
+export function loadConfigFile(path: string): ResolvedConfig {
+  const configPath = resolve(path);
+  if (!existsSync(configPath)) {
+    throw new UsageError(`no such config file: ${configPath}`);
+  }
+
+  const legacy = (LEGACY_CONFIG_NAMES as readonly string[]).includes(
+    basename(configPath),
+  );
+
+  return {
+    root: dirname(configPath),
+    configPath,
+    config: parseConfigFile(configPath, readFileSync(configPath, 'utf8')),
+    warnings: legacy ? configNameWarnings(configPath) : [],
+  };
+}
+
 /** The content policy a config implies. */
 export function contentPolicy(config: Config): ContentPolicy {
   return { tools: config.tools, thinking: config.thinking, images: config.images };

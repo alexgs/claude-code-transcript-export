@@ -41,6 +41,7 @@ describe('library exports', () => {
         "linkContinuations",
         "listLogFiles",
         "loadConfig",
+        "loadConfigFile",
         "mergeConfig",
         "parityReport",
         "parityStatement",
