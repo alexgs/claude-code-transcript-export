@@ -13,7 +13,9 @@ export { defaultLogRoot, encodeProjectDir, isWithin } from './paths.js';
 export {
   CONFIG_NAMES,
   DEFAULT_CONFIG,
+  LEGACY_CONFIG_NAMES,
   UsageError,
+  configNameWarnings,
   contentPolicy,
   findConfig,
   loadConfig,
