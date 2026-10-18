@@ -53,6 +53,12 @@ no claude.ai URL — and parameterizing every sentence would produce a function
 whose output nobody could predict from its call. A consumer writes its own
 index from `parityStatement` and its own rows.
 
+**Since.** A consumer carrying rows forward needs back the fields it wrote,
+and `parseTranscript` returned only the ones `cctx` uses. `CarriedTranscript`
+now also has `frontmatter`, the whole block as parsed. The named fields stay
+validated; `frontmatter` is whatever the file says. The first consumer,
+`caitx`, needs it for an index column naming each conversation's project.
+
 ## §12, restated
 
 The list in §12 had drifted: `findSessions` and `renderSession` never shipped

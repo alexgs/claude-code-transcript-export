@@ -40,6 +40,17 @@ export interface CarriedTranscript {
   parity: ParityReport | null;
   /** Image filenames the body links to. */
   images: string[];
+  /**
+   * The whole frontmatter block, as parsed — including the fields above and
+   * anything a consumer added through `renderTranscript`'s `fields`.
+   *
+   * The named fields are what the index needs and are validated; this is
+   * whatever the file says, unvalidated. A consumer that writes its own fields
+   * needs them back for the rows it carries forward — a project name, a URL —
+   * and reading the file a second time to get them would mean a second
+   * frontmatter parser that could disagree with this one.
+   */
+  frontmatter: Record<string, unknown>;
 }
 
 /** The leading `---\n...\n---\n` block, and only the leading one. */
@@ -140,6 +151,7 @@ export function parseTranscript(
         ? null
         : parityReport(speakers.map((s) => ({ speaker: s, text: '' }))),
     images: readImageLinks(body),
+    frontmatter: { ...fields },
   };
 }
 

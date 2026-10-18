@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseRecords } from '../src/discover.js';
 import { probeRecords } from '../src/cli/probe.js';
 import { readSession } from '../src/session.js';
-import { renderTranscript } from '../src/render/transcript.js';
+import { frontmatterFor, renderTranscript } from '../src/render/transcript.js';
 import { parseTranscript } from '../src/carry.js';
 import { parityReport } from '../src/turns.js';
 
@@ -68,6 +68,7 @@ describe('schema snapshot', () => {
       turns: session.turns.length,
       parity: parityReport(session.turns),
       images: session.images.map((i) => i.filename),
+      frontmatter: frontmatterFor(session, { extractedOn: '2026-09-02' }),
     });
   });
 

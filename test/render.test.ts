@@ -224,6 +224,7 @@ describe('renderIndex with carried rows', () => {
     turns: 7,
     parity: { turns: 7, startsWithHuman: true, alternationBreaks: 0 },
     images: [],
+    frontmatter: {},
     ...over,
   });
 

@@ -262,6 +262,8 @@ breaks first:
 - **Write your own index.** `renderIndex` describes Claude Code sessions in its
   prose. `parityStatement` and the rows from `readTranscripts` are the reusable
   parts.
+  Each row's `frontmatter` holds every field the file records, including those
+  you added through `fields`, so a carried row can show them too.
 
 ### Stability
 
