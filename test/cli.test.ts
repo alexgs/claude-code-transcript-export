@@ -38,7 +38,7 @@ function project(withConfig = true) {
   const logRoot = tempDir('cctx-logs-');
   const root = tempDir('cctx-proj-');
   if (withConfig) {
-    writeFileSync(join(root, '.claude-export.yaml'), 'out: transcripts\n');
+    writeFileSync(join(root, '.cctx.yaml'), 'out: transcripts\n');
   }
   writeLog(join(logRoot, 'encoded', `${SESSION_ID}.jsonl`), [
     { type: 'mode', sessionId: SESSION_ID },
@@ -96,6 +96,21 @@ describe('parseArgs', () => {
 });
 
 describe('cctx extract', () => {
+  it('runs from a legacy config, warning on stderr only', () => {
+    const { logRoot, root } = project(false);
+    writeFileSync(join(root, '.claude-export.yaml'), 'out: transcripts\n');
+    const result = run(['--log-root', logRoot, '--json'], root);
+    expect(result.code).toBe(0);
+    expect(result.err).toContain('cctx: warning:');
+    expect(result.err).toContain(`mv ${join(root, '.claude-export.yaml')}`);
+    expect(JSON.parse(result.out).sessions).toBe(1);
+  });
+
+  it('says nothing about the name of a current config', () => {
+    const { logRoot, root } = project();
+    expect(run(['--log-root', logRoot], root).err).toBe('');
+  });
+
   it('writes transcripts and reports the resolved root', () => {
     const { logRoot, root } = project();
     const result = run(['--log-root', logRoot], root);
@@ -178,7 +193,7 @@ describe('cctx list', () => {
   it('marks an excluded session', () => {
     const { logRoot, root } = project();
     writeFileSync(
-      join(root, '.claude-export.yaml'),
+      join(root, '.cctx.yaml'),
       `out: transcripts\nexclude:\n  - ${SESSION_ID}\n`,
     );
     expect(run(['list', '--log-root', logRoot], root).out).toContain('excluded');
@@ -187,7 +202,7 @@ describe('cctx list', () => {
   it('says so plainly when a project has no sessions', () => {
     const logRoot = tempDir('cctx-logs-');
     const root = tempDir('cctx-proj-');
-    writeFileSync(join(root, '.claude-export.yaml'), 'out: t\n');
+    writeFileSync(join(root, '.cctx.yaml'), 'out: t\n');
     writeLog(join(logRoot, 'other', 'x.jsonl'), [
       userRecord('x', { cwd: '/elsewhere' }),
     ]);
@@ -212,13 +227,23 @@ describe('cctx init', () => {
     const root = tempDir('cctx-proj-');
     const result = run(['init'], root);
     expect(result.code).toBe(0);
-    expect(existsSync(join(root, '.claude-export.yaml'))).toBe(true);
+    expect(existsSync(join(root, '.cctx.yaml'))).toBe(true);
     expect(result.out).toContain(`project root: ${root}`);
+  });
+
+  it('refuses when a legacy config is already here', () => {
+    // Writing .cctx.yaml beside it would silently replace its settings.
+    const root = tempDir('cctx-proj-');
+    writeFileSync(join(root, '.claude-export.yaml'), 'out: x\n');
+    const result = run(['init'], root);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain('.claude-export.yaml already exists');
+    expect(existsSync(join(root, '.cctx.yaml'))).toBe(false);
   });
 
   it('refuses to overwrite an existing config', () => {
     const root = tempDir('cctx-proj-');
-    writeFileSync(join(root, '.claude-export.yaml'), 'out: x\n');
+    writeFileSync(join(root, '.cctx.yaml'), 'out: x\n');
     const result = run(['init'], root);
     expect(result.code).toBe(1);
     expect(result.err).toContain('already exists');
@@ -227,7 +252,7 @@ describe('cctx init', () => {
   it('writes a config that parses back to the defaults', () => {
     const root = tempDir('cctx-proj-');
     run(['init'], root);
-    const written = readFileSync(join(root, '.claude-export.yaml'), 'utf8');
+    const written = readFileSync(join(root, '.cctx.yaml'), 'utf8');
     expect(written).toContain('skipActive: false');
     expect(run(['list', '--log-root', tempDir()], root).code).toBe(0);
   });

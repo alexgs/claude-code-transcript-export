@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import type {
   ContentPolicy,
@@ -12,7 +12,22 @@ import type {
 export class UsageError extends Error {}
 
 /** Config filenames, in precedence order. First match wins. */
-export const CONFIG_NAMES = ['.claude-export.yaml', '.claude-export.json'] as const;
+export const CONFIG_NAMES = ['.cctx.yaml', '.cctx.json'] as const;
+
+/**
+ * The config's original names, still read, each with a warning to rename.
+ *
+ * Index-aligned with `CONFIG_NAMES`: the legacy name at `i` is renamed to the
+ * current name at `i`. Read after the current names in the same directory, but
+ * before anything in a parent — the walk is nearest-directory-first whatever
+ * the file is called, or a legacy config in a nested repo would suddenly lose
+ * to a renamed one above it, and the project root would move. See
+ * specification 06.
+ */
+export const LEGACY_CONFIG_NAMES = [
+  '.claude-export.yaml',
+  '.claude-export.json',
+] as const;
 
 export interface IndexConfig {
   enabled: boolean;
@@ -61,6 +76,12 @@ export interface ResolvedConfig {
   /** Absolute path of the config file, or null when defaults were used. */
   configPath: string | null;
   config: Config;
+  /**
+   * Things the user should fix about the config file itself, for the CLI to
+   * print. Returned rather than written, because nothing below `cli/` owns a
+   * stream.
+   */
+  warnings: string[];
 }
 
 /**
@@ -76,7 +97,7 @@ export function findConfig(from: string): string | null {
   let dir = resolve(from);
 
   for (;;) {
-    for (const name of CONFIG_NAMES) {
+    for (const name of [...CONFIG_NAMES, ...LEGACY_CONFIG_NAMES]) {
       const candidate = join(dir, name);
       if (existsSync(candidate)) return candidate;
     }
@@ -210,6 +231,36 @@ export function parseConfigFile(path: string, contents: string): Config {
 }
 
 /**
+ * What is wrong with the name of the config at `configPath`, if anything.
+ *
+ * Two cases. A legacy name is read but should be renamed. And a current name
+ * with a legacy file beside it means the legacy file is being ignored — which
+ * is silent in the worst way, since its `exclude` list may be the one the
+ * author thinks is in force.
+ */
+export function configNameWarnings(configPath: string): string[] {
+  const dir = dirname(configPath);
+  const name = basename(configPath);
+
+  const legacy = (LEGACY_CONFIG_NAMES as readonly string[]).indexOf(name);
+  if (legacy !== -1) {
+    const renamed = join(dir, CONFIG_NAMES[legacy] as string);
+    return [
+      `${configPath} uses the old config name. Rename it to ` +
+        `${basename(renamed)}: mv ${configPath} ${renamed}`,
+    ];
+  }
+
+  return LEGACY_CONFIG_NAMES.map((n) => join(dir, n))
+    .filter((path) => existsSync(path))
+    .map(
+      (path) =>
+        `${path} is ignored because ${configPath} takes precedence. ` +
+        'Merge anything you still need from it, then delete it.',
+    );
+}
+
+/**
  * Discovers and loads the config, or reports that there is none.
  *
  * `projectOverride` skips discovery entirely, for `--project`: a root without a
@@ -224,6 +275,7 @@ export function loadConfig(
       root: resolve(projectOverride),
       configPath: null,
       config: { ...DEFAULT_CONFIG, index: { ...DEFAULT_CONFIG.index } },
+      warnings: [],
     };
   }
 
@@ -234,6 +286,7 @@ export function loadConfig(
     root: dirname(configPath),
     configPath,
     config: parseConfigFile(configPath, readFileSync(configPath, 'utf8')),
+    warnings: configNameWarnings(configPath),
   };
 }
 
