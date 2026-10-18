@@ -13,10 +13,13 @@ export { defaultLogRoot, encodeProjectDir, isWithin } from './paths.js';
 export {
   CONFIG_NAMES,
   DEFAULT_CONFIG,
+  LEGACY_CONFIG_NAMES,
   UsageError,
+  configNameWarnings,
   contentPolicy,
   findConfig,
   loadConfig,
+  loadConfigFile,
   mergeConfig,
   parseConfigFile,
   type Config,
@@ -115,6 +118,8 @@ export {
 
 export { formatProbe, probe, probeRecords, type ProbeReport } from './cli/probe.js';
 
+export { DEFAULT_CONTENT_POLICY } from './types.js';
+
 export type {
   ContentPolicy,
   ImagePolicy,
@@ -127,4 +132,5 @@ export type {
   Speaker,
   ThinkingPolicy,
   ToolPolicy,
+  TranscriptSession,
 } from './types.js';

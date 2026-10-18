@@ -35,7 +35,7 @@ interface IndexRow {
  * magnitude more breaks than exist.
  */
 export function parityStatement(
-  sessions: Session[],
+  sessions: Pick<Session, 'turns'>[],
   carried: CarriedTranscript[] = [],
 ): string {
   const totals = aggregateParity([

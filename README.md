@@ -23,7 +23,7 @@ Installs the `cctx` command. Requires Node 22 or newer.
 From anywhere inside your project:
 
 ```sh
-cctx init      # write .claude-export.yaml — its location marks the project root
+cctx init      # write .cctx.yaml — its location marks the project root
 cctx list      # see every session, with its UUID
 cctx           # write transcripts
 ```
@@ -108,8 +108,9 @@ reason.
 
 ## Configuration
 
-`.claude-export.yaml`, at the project root. `cctx init` writes a commented
-starter. Every key is optional; see
+`.cctx.yaml`, at the project root. `cctx init` writes a commented starter.
+A config under its old name, `.claude-export.yaml`, is still read, with a
+warning saying how to rename it. Every key is optional; see
 [the specification](docs/specs/01-initial-specification.md) for the full list.
 
 Sessions are selected by UUID — titles are model-generated and change while you
@@ -141,13 +142,139 @@ does not handle. Run it when output looks wrong.
 
 ## Library
 
+The CLI is a thin wrapper over a library, and the library is published with
+it. Every export carries a doc comment, which your editor shows from the
+bundled type declarations; this section covers how the pieces fit together.
+
+Nothing in the library reads the clock, the environment, or your home
+directory on its own initiative. Where a function needs one of those it takes
+it as a parameter — `today`, `extractedOn`, `logRoot`, `now` — and the caller
+does the reading. The one exception is `defaultLogRoot()`, which falls back to
+`os.homedir()` when called without an argument.
+
+### The pipeline
+
+| Stage | Exports | Touches the filesystem |
+| --- | --- | --- |
+| Find logs | `discover`, `listLogFiles`, `readLogFile`, `readIdentity`, `belongsToProject`, `defaultLogRoot`, `encodeProjectDir` | `discover`, `listLogFiles`, `readLogFile` |
+| Records to a session | `parseRecords`, `readSession`, `readSessions`, `linkContinuations`, `resolveTitle`, `toLocalDate` | — |
+| Turns | `buildTurns`, `isHumanTurn`, `parityReport`, `aggregateParity` | — |
+| Blocks to markdown | `renderBlock`, `recordText`, `renderImage`, `fence`, `stripHarnessTags`, `slugify` | — |
+| Sessions to markdown | `renderTranscript`, `frontmatterFor`, `sessionFilename`, `renderIndex`, `parityStatement`, `readExtractedDate` | — |
+| Reading output back | `parseTranscript`, `readTurnHeadings`, `readImageLinks`, `readTranscripts` | `readTranscripts` |
+| Writing | `writeIfChanged`, `writePlainIfChanged`, `writeImages`, `pruneRenamed`, `pruneExcluded`, `findOrphanImages` | all |
+| Configuration | `findConfig`, `loadConfig`, `parseConfigFile`, `mergeConfig`, `contentPolicy`, `DEFAULT_CONFIG`, `DEFAULT_CONTENT_POLICY` | `findConfig`, `loadConfig` |
+| The whole run | `extract`, `fileSources`, `probe` | all |
+
+### Claude Code logs
+
+`extract` is everything `cctx` does, given a root, a config and a date:
+
 ```ts
-import { discover, readSession, renderTranscript } from '@alexgsdev/claude-code-transcript-export';
+import { DEFAULT_CONFIG, defaultLogRoot, extract } from '@alexgsdev/claude-code-transcript-export';
+
+const summary = extract({
+  root: '/path/to/project',
+  logRoot: defaultLogRoot(),
+  config: DEFAULT_CONFIG,
+  today: '2026-10-18',
+});
 ```
 
-Everything is pure unless its name says otherwise — nothing below the CLI layer
-reads the clock, the environment, or your home directory. See
-[the specification](docs/specs/01-initial-specification.md) §12.
+Or take the stages one at a time, to do something else with the parse:
+
+```ts
+import {
+  defaultLogRoot,
+  discover,
+  readSession,
+  renderTranscript,
+} from '@alexgsdev/claude-code-transcript-export';
+
+for (const log of discover(defaultLogRoot(), '/path/to/project')) {
+  const session = readSession(log.records);
+  console.log(renderTranscript(session, { extractedOn: '2026-10-18' }));
+}
+```
+
+### Conversations from somewhere else
+
+The back half of the pipeline doesn't care where a conversation came from.
+`renderTranscript` and `sessionFilename` take a `TranscriptSession`: an id, a
+title, `YYYY-MM-DD` dates, and turns with a `Human` or `Assistant` speaker.
+
+```ts
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  pruneRenamed,
+  readTranscripts,
+  renderTranscript,
+  sessionFilename,
+  slugify,
+  writeIfChanged,
+  type TranscriptSession,
+} from '@alexgsdev/claude-code-transcript-export';
+
+// Built by your own reader, from whatever source it reads.
+declare const conversations: TranscriptSession[];
+const today = '2026-10-18';
+const outDir = 'docs/conversations';
+
+// Before writing anything: this is what earlier runs left behind, and it is
+// how an index keeps rows for conversations this run no longer has.
+const onDisk = readTranscripts(outDir);
+
+mkdirSync(outDir, { recursive: true });
+const names: string[] = [];
+
+for (const conversation of conversations) {
+  const name = sessionFilename(conversation, slugify);
+  writeIfChanged(
+    join(outDir, name),
+    (extractedOn) =>
+      renderTranscript(conversation, {
+        extractedOn,
+        source: 'claude-ai',
+        fields: { url: `https://claude.ai/chat/${conversation.id}` },
+      }),
+    today,
+  );
+  names.push(name);
+}
+
+pruneRenamed(outDir, names);
+```
+
+A few rules hold the output together, and they are the ones a new consumer
+breaks first:
+
+- **Name files with `sessionFilename`.** `readTranscripts`, `pruneRenamed` and
+  `pruneExcluded` only recognize its `<date>--<slug>--<id8>.md` shape, and
+  ignore anything else in the directory.
+- **Let `writeIfChanged` own the `extracted:` date.** It renders with the date
+  already on disk and writes only when something else changed, so rerunning over
+  the same input writes nothing. `fields` cannot set `extracted`, `session_id`,
+  `turns` or any other key the library writes itself.
+- **Pass `pruneRenamed` every name the run produced**, including the ones
+  `writeIfChanged` skipped as unchanged. A name missing from that list is a
+  file it may delete.
+- **Write your own index.** `renderIndex` describes Claude Code sessions in its
+  prose. `parityStatement` and the rows from `readTranscripts` are the reusable
+  parts.
+  Each row's `frontmatter` holds every field the file records, including those
+  you added through `fields`, so a carried row can show them too.
+
+### Stability
+
+The public surface is exactly what `src/index.ts` exports, and
+`test/exports.test.ts` lists it, so nothing is added or removed by accident.
+Removing a name or changing a signature incompatibly is a breaking change, and
+the changelog says so. Anything not exported from the package root is
+internal. The
+reasoning behind the API is in
+[the specification](docs/specs/01-initial-specification.md) §12 and
+[specification 05](docs/specs/05-library-for-other-sources.md).
 
 ## Releasing
 

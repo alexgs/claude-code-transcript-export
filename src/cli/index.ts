@@ -7,8 +7,10 @@ import { pathToFileURL } from 'node:url';
 import {
   CONFIG_NAMES,
   DEFAULT_CONFIG,
+  LEGACY_CONFIG_NAMES,
   UsageError,
   loadConfig,
+  loadConfigFile,
   type Config,
 } from '../config.js';
 import { discover, listLogFiles } from '../discover.js';
@@ -40,7 +42,7 @@ Usage:
   cctx [extract]   Write transcripts for this project   (default)
   cctx list        Show every session and its status
   cctx probe       Report the observed log schema
-  cctx init        Write a .claude-export.yaml here
+  cctx init        Write a .cctx.yaml here
 
 Options:
   --config <path>    Use this config file
@@ -74,6 +76,7 @@ interface Resolved {
   root: string;
   configPath: string | null;
   config: Config;
+  warnings: string[];
   logRoot: string;
 }
 
@@ -81,10 +84,7 @@ function resolveContext(options: Options, cwd: string): Resolved {
   const logRoot = resolve(options.logRoot ?? defaultLogRoot(homedir()));
 
   if (options.config !== undefined) {
-    const path = resolve(options.config);
-    if (!existsSync(path)) throw new UsageError(`no such config file: ${path}`);
-    const loaded = loadConfig(path.replace(/\/[^/]+$/, ''));
-    if (loaded === null) throw new UsageError(`could not read config at ${path}`);
+    const loaded = loadConfigFile(resolve(options.config));
     return { ...loaded, config: applyOverrides(loaded.config, options), logRoot };
   }
 
@@ -177,8 +177,14 @@ export function main(
 
     if (options.command === 'init') {
       const path = join(io.cwd, CONFIG_NAMES[0]);
-      if (existsSync(path)) {
-        io.stderr.write(`cctx: ${path} already exists.\n`);
+      // Any config already here, under either name, not just the one about to
+      // be written: a fresh .cctx.yaml beside a legacy file would silently
+      // replace the legacy file's settings, `exclude` list included.
+      const existing = [...CONFIG_NAMES, ...LEGACY_CONFIG_NAMES]
+        .map((name) => join(io.cwd, name))
+        .find((candidate) => existsSync(candidate));
+      if (existing !== undefined) {
+        io.stderr.write(`cctx: ${existing} already exists.\n`);
         return 1;
       }
       writeFileSync(path, TEMPLATE);
@@ -187,6 +193,10 @@ export function main(
     }
 
     const context = resolveContext(options, io.cwd);
+    // stderr, so `--json` output stays parseable.
+    for (const warning of context.warnings) {
+      io.stderr.write(`cctx: warning: ${warning}\n`);
+    }
     // The only clock and environment reads in the package live here.
     const today = todayLocal();
     const currentSessionId = io.env.CLAUDE_CODE_SESSION_ID;

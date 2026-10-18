@@ -101,6 +101,26 @@ export interface Session {
 }
 
 /**
+ * The part of a `Session` that a transcript is rendered from.
+ *
+ * What `renderTranscript`, `frontmatterFor` and `sessionFilename` accept, so a
+ * consumer building conversations from some other source — a claude.ai account
+ * export, say — need not invent working directories or a raw record count to
+ * satisfy the type. A `Session` is one, structurally.
+ */
+export type TranscriptSession = Pick<
+  Session,
+  | 'id'
+  | 'title'
+  | 'created'
+  | 'updated'
+  | 'turns'
+  | 'kind'
+  | 'continuedIn'
+  | 'continues'
+>;
+
+/**
  * Filesystem lookups for a sent image the log does not hold.
  *
  * Injected, so everything that renders stays pure and the test suite never

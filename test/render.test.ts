@@ -56,6 +56,48 @@ describe('renderTranscript', () => {
     expect(fm).toMatchObject({ kind: 'bg', continued_in: 'next', continues: 'prev' });
   });
 
+  it('records claude-code as the source unless told otherwise', () => {
+    expect(frontmatterFor(session(), { extractedOn: '2026-09-02' }).source).toBe(
+      'claude-code',
+    );
+    expect(
+      frontmatterFor(session(), { extractedOn: '2026-09-02', source: 'claude-ai' })
+        .source,
+    ).toBe('claude-ai');
+  });
+
+  it('appends further fields after its own, in order', () => {
+    const fm = frontmatterFor(session(), {
+      extractedOn: '2026-09-02',
+      fields: { project_id: 'p1', url: 'https://example.invalid/c' },
+    });
+    expect(Object.keys(fm).slice(-2)).toEqual(['project_id', 'url']);
+    expect(fm).toMatchObject({ project_id: 'p1', url: 'https://example.invalid/c' });
+  });
+
+  it('never lets further fields replace what the library reads back', () => {
+    const fm = frontmatterFor(session(), {
+      extractedOn: '2026-09-02',
+      fields: { session_id: 'forged', turns: 99, extracted: '1999-01-01', source: 'x' },
+    });
+    expect(fm).toMatchObject({
+      session_id: session().id,
+      turns: 2,
+      extracted: '2026-09-02',
+      source: 'claude-code',
+    });
+  });
+
+  it('renders from the transcript subset alone, without log-only fields', () => {
+    const { id, title, created, updated, turns } = session();
+    const out = renderTranscript(
+      { id, title, created, updated, turns },
+      { extractedOn: '2026-09-02', source: 'claude-ai' },
+    );
+    expect(readExtractedDate(out)).toBe('2026-09-02');
+    expect(out).toContain('## [2] Assistant');
+  });
+
   it('renders commits as hash and subject so the hash is greppable', () => {
     const out = renderTranscript(session(), {
       extractedOn: '2026-09-02',
@@ -182,6 +224,7 @@ describe('renderIndex with carried rows', () => {
     turns: 7,
     parity: { turns: 7, startsWithHuman: true, alternationBreaks: 0 },
     images: [],
+    frontmatter: {},
     ...over,
   });
 

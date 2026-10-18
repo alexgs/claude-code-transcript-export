@@ -9,6 +9,7 @@ import type {
   SentFileSources,
   Session,
   SessionImage,
+  TranscriptSession,
 } from './types.js';
 
 /** The last non-empty value of a field across records of one type. */
@@ -125,7 +126,7 @@ export function linkContinuations(sessions: Session[]): Session[] {
 
 /** `<date>--<slug>--<id8>.md`. */
 export function sessionFilename(
-  session: Session,
+  session: TranscriptSession,
   slugify: (s: string) => string,
 ): string {
   return `${session.created}--${slugify(session.title)}--${session.id.slice(0, 8)}.md`;
